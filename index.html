@@ -7,48 +7,62 @@
     <style>
         /* Grund-Einstellungen */
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
+            /* Nutzt die modernsten Grotesk-Schriften (ähnlich Neue Haas Grotesk) */
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
             margin: 0;
-            padding: 20px 40px; /* Abstand zum Rand */
+            padding: 30px 40px; /* Abstand zum Rand */
             color: #000;
             background-color: #fff;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Der Header, der alles nach außen drückt */
+        /* Layout-Container */
         header {
             display: flex;
-            justify-content: space-between; /* Links und rechts trennen */
-            align-items: flex-start;
+            justify-content: space-between; 
+            align-items: baseline; /* Richtet Text an der unteren Linie aus */
         }
 
-        /* Name links oben */
+        /* Name links oben - Große, fette Grotesk */
         h1 { 
-            font-weight: 700; 
-            font-size: 1.5rem; 
+            font-weight: 800; /* Bold / Extra Bold */
+            font-size: 3.5rem; /* Schön groß wie im Screenshot */
             margin: 0;
-            text-transform: uppercase; /* Alles Großbuchstaben wie im Screenshot */
-            letter-spacing: -0.02em;
+            text-transform: uppercase; 
+            letter-spacing: -0.04em; /* Engeres Spacing für den Grotesk-Look */
+            line-height: 0.9;
         }
 
-        /* Mail rechts oben */
+        /* Komplette Mailadresse rechts */
         .mail-link {
-            font-size: 0.9rem;
+            font-size: 1rem;
+            font-weight: 500;
             text-decoration: none;
             color: #000;
-            margin-top: 5px; /* Kleiner Ausgleich nach unten */
+            letter-spacing: -0.01em;
         }
 
         .mail-link:hover {
-            opacity: 0.6;
+            text-decoration: underline;
+        }
+
+        /* Mobil-Optimierung: Untereinander auf dem Handy */
+        @media (max-width: 600px) {
+            header {
+                flex-direction: column;
+                gap: 20px;
+            }
+            h1 {
+                font-size: 2.5rem;
+            }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Max Gschwendtner</h1>
-        <a href="mailto:mail@maxgschwendtner.com" class="mail-link">mail</a>
+        <h1>MAX GSCHWENDTNER</h1>
+        <a href="mailto:mail@maxgschwendtner.com" class="mail-link">mail@maxgschwendtner.com</a>
     </header>
 
 </body>
