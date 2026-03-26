@@ -11,21 +11,15 @@
             background-color: #fff;
             color: #000;
             -webkit-font-smoothing: antialiased;
-            /* Ermöglicht unendliches Scrollen */
             min-height: 5000px; 
         }
 
+        /* Name bleibt oben links fixiert */
         header {
-            display: flex;
-            justify-content: space-between; 
-            align-items: baseline;
             position: fixed;
             top: 0;
             left: 0;
-            right: 0;
             padding: 30px 40px;
-            background: rgba(255,255,255,0.8);
-            backdrop-filter: blur(5px); /* Schicker Glas-Effekt */
             z-index: 100;
         }
 
@@ -38,43 +32,55 @@
             line-height: 0.9;
         }
 
+        /* Mail-Adresse unten rechts fixiert */
         .mail-link {
+            position: fixed;
+            bottom: 30px;
+            right: 40px;
             font-size: 1rem;
             text-decoration: none;
             color: #000;
+            font-weight: 500;
+            z-index: 100;
+            background: rgba(255,255,255,0.8);
+            padding: 5px;
         }
 
-        /* Container für die Punkte */
+        .mail-link:hover {
+            opacity: 0.5;
+        }
+
+        /* Scroll-Inhalt */
         .content {
             padding-top: 300px;
         }
 
         .dot-row {
-            height: 40vh; /* Abstand zwischen den Punkten beim Scrollen */
+            height: 50vh; 
             display: flex;
             position: relative;
         }
 
         .dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             background-color: #000;
             border-radius: 50%;
         }
 
-        /* Verschiedene "Random" Positionen */
-        .p1 { margin-left: 15%; }
-        .p2 { margin-left: 65%; }
-        .p3 { margin-left: 40%; }
-        .p4 { margin-left: 85%; }
-        .p5 { margin-left: 5%; }
+        /* "Random" Positionen für die Punkte */
+        .p1 { margin-left: 12%; }
+        .p2 { margin-left: 78%; }
+        .p3 { margin-left: 35%; }
+        .p4 { margin-left: 92%; }
+        .p5 { margin-left: 8%; }
         .p6 { margin-left: 55%; }
-        .p7 { margin-left: 25%; }
-        .p8 { margin-left: 75%; }
+        .p7 { margin-left: 22%; }
 
         @media (max-width: 600px) {
             h1 { font-size: 2rem; }
-            .dot-row { height: 30vh; }
+            header, .mail-link { padding: 20px; }
+            .mail-link { bottom: 20px; right: 20px; font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -82,8 +88,9 @@
 
     <header>
         <h1>MAX GSCHWENDTNER</h1>
-        <a href="mailto:mail@maxgschwendtner.com" class="mail-link">mail@maxgschwendtner.com</a>
     </header>
+
+    <a href="mailto:mail@maxgschwendtner.com" class="mail-link">mail@maxgschwendtner.com</a>
 
     <div class="content">
         <div class="dot-row p1"><div class="dot"></div></div>
@@ -92,12 +99,10 @@
         <div class="dot-row p2"><div class="dot"></div></div>
         <div class="dot-row p5"><div class="dot"></div></div>
         <div class="dot-row p3"><div class="dot"></div></div>
-        <div class="dot-row p8"><div class="dot"></div></div>
         <div class="dot-row p6"><div class="dot"></div></div>
-        <div class="dot-row p2"><div class="dot"></div></div>
         <div class="dot-row p1"><div class="dot"></div></div>
         <div class="dot-row p4"><div class="dot"></div></div>
-        <div class="dot-row p7"><div class="dot"></div></div>
+        <div class="dot-row p2"><div class="dot"></div></div>
         </div>
 
 </body>
