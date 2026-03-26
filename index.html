@@ -11,16 +11,18 @@
             background-color: #fff;
             color: #000;
             -webkit-font-smoothing: antialiased;
-            min-height: 5000px; 
+            /* Sorgt für eine extrem lange Scrollbar */
+            min-height: 15000px; 
         }
 
-        /* Name bleibt oben links fixiert */
+        /* Name oben links fixiert */
         header {
             position: fixed;
             top: 0;
             left: 0;
             padding: 30px 40px;
             z-index: 100;
+            pointer-events: none; /* Man kann durch den Header klicken */
         }
 
         h1 { 
@@ -30,9 +32,10 @@
             text-transform: uppercase; 
             letter-spacing: -0.04em;
             line-height: 0.9;
+            pointer-events: auto;
         }
 
-        /* Mail-Adresse unten rechts fixiert */
+        /* Mail unten rechts fixiert */
         .mail-link {
             position: fixed;
             bottom: 30px;
@@ -42,21 +45,20 @@
             color: #000;
             font-weight: 500;
             z-index: 100;
-            background: rgba(255,255,255,0.8);
-            padding: 5px;
         }
 
         .mail-link:hover {
             opacity: 0.5;
         }
 
-        /* Scroll-Inhalt */
+        /* Der Scroll-Content */
         .content {
-            padding-top: 300px;
+            padding-top: 400px;
         }
 
         .dot-row {
-            height: 50vh; 
+            /* Vertikaler Abstand: 120% der Bildschirmhöhe pro Punkt */
+            height: 120vh; 
             display: flex;
             position: relative;
         }
@@ -68,19 +70,21 @@
             border-radius: 50%;
         }
 
-        /* "Random" Positionen für die Punkte */
-        .p1 { margin-left: 12%; }
-        .p2 { margin-left: 78%; }
-        .p3 { margin-left: 35%; }
-        .p4 { margin-left: 92%; }
-        .p5 { margin-left: 8%; }
-        .p6 { margin-left: 55%; }
-        .p7 { margin-left: 22%; }
+        /* Viele verschiedene Random-Positionen */
+        .p1 { margin-left: 15%; }
+        .p2 { margin-left: 85%; }
+        .p3 { margin-left: 45%; }
+        .p4 { margin-left: 70%; }
+        .p5 { margin-left: 5%; }
+        .p6 { margin-left: 30%; }
+        .p7 { margin-left: 90%; }
+        .p8 { margin-left: 60%; }
+        .p9 { margin-left: 20%; }
 
         @media (max-width: 600px) {
-            h1 { font-size: 2rem; }
-            header, .mail-link { padding: 20px; }
-            .mail-link { bottom: 20px; right: 20px; font-size: 0.8rem; }
+            h1 { font-size: 2.2rem; }
+            header { padding: 20px; }
+            .mail-link { bottom: 20px; right: 20px; }
         }
     </style>
 </head>
@@ -95,14 +99,26 @@
     <div class="content">
         <div class="dot-row p1"><div class="dot"></div></div>
         <div class="dot-row p4"><div class="dot"></div></div>
-        <div class="dot-row p7"><div class="dot"></div></div>
+        <div class="dot-row p9"><div class="dot"></div></div>
         <div class="dot-row p2"><div class="dot"></div></div>
         <div class="dot-row p5"><div class="dot"></div></div>
+        <div class="dot-row p8"><div class="dot"></div></div>
         <div class="dot-row p3"><div class="dot"></div></div>
+        <div class="dot-row p7"><div class="dot"></div></div>
+        <div class="dot-row p6"><div class="dot"></div></div>
+        <div class="dot-row p2"><div class="dot"></div></div>
+        <div class="dot-row p5"><div class="dot"></div></div>
+        <div class="dot-row p1"><div class="dot"></div></div>
+        <div class="dot-row p9"><div class="dot"></div></div>
+        <div class="dot-row p4"><div class="dot"></div></div>
+        <div class="dot-row p7"><div class="dot"></div></div>
+        <div class="dot-row p3"><div class="dot"></div></div>
+        <div class="dot-row p8"><div class="dot"></div></div>
         <div class="dot-row p6"><div class="dot"></div></div>
         <div class="dot-row p1"><div class="dot"></div></div>
         <div class="dot-row p4"><div class="dot"></div></div>
         <div class="dot-row p2"><div class="dot"></div></div>
+        <div class="dot-row p9"><div class="dot"></div></div>
         </div>
 
 </body>
