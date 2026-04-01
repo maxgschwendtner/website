@@ -3,39 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Max Gschwendtner</title>
+    <title>Max Gschwendtner - Interactive Dots</title>
     <style>
-        body { 
-            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
+        /* --- Basis-Styling & Layout --- */
+        body, html {
             margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
             background-color: #fff;
             color: #000;
             -webkit-font-smoothing: antialiased;
-            /* Sorgt für eine extrem lange Scrollbar */
-            min-height: 15000px; 
+            overflow: hidden; /* Verhindert Standard-Scrollbars, wir scrollen den Container */
         }
 
-        /* Name oben links fixiert */
+        /* --- Fixierte Elemente (Header & Mail) --- */
         header {
             position: fixed;
             top: 0;
             left: 0;
             padding: 30px 40px;
-            z-index: 100;
-            pointer-events: none; /* Man kann durch den Header klicken */
+            z-index: 1000; /* Sehr hoch, damit es über allem bleibt */
+            pointer-events: none; /* Klicks gehen durch den Header hindurch... */
         }
 
-        h1 { 
-            font-weight: 800; 
-            font-size: 3.5rem; 
+        h1 {
+            font-weight: 800;
+            font-size: 3.5rem;
             margin: 0;
-            text-transform: uppercase; 
+            text-transform: uppercase;
             letter-spacing: -0.04em;
             line-height: 0.9;
-            pointer-events: auto;
+            pointer-events: auto; /* ...aber der Text selbst ist klickbar */
         }
 
-        /* Mail unten rechts fixiert */
         .mail-link {
             position: fixed;
             bottom: 30px;
@@ -44,47 +46,71 @@
             text-decoration: none;
             color: #000;
             font-weight: 500;
-            z-index: 100;
+            z-index: 1000;
         }
 
         .mail-link:hover {
             opacity: 0.5;
         }
 
-        /* Der Scroll-Content */
-        .content {
-            padding-top: 400px;
-        }
-
-        .dot-row {
-            /* Vertikaler Abstand: 120% der Bildschirmhöhe pro Punkt */
-            height: 120vh; 
-            display: flex;
+        /* --- Scrollbarer Container (Das Herzstück) --- */
+        #scroll-container {
+            width: 100vw;
+            height: 100vh;
+            overflow: auto; /* Ermöglicht Scrollen in alle Richtungen */
+            cursor: grab; /* Zeigt an, dass man ziehen kann */
             position: relative;
         }
 
-        .dot {
-            width: 8px;
-            height: 8px;
-            background-color: #000;
-            border-radius: 50%;
+        #scroll-container:active {
+            cursor: grabbing; /* Zeigt Ziehen an */
         }
 
-        /* Viele verschiedene Random-Positionen */
-        .p1 { margin-left: 15%; }
-        .p2 { margin-left: 85%; }
-        .p3 { margin-left: 45%; }
-        .p4 { margin-left: 70%; }
-        .p5 { margin-left: 5%; }
-        .p6 { margin-left: 30%; }
-        .p7 { margin-left: 90%; }
-        .p8 { margin-left: 60%; }
-        .p9 { margin-left: 20%; }
+        /* Die "Leinwand", die viel größer ist als der Bildschirm */
+        #canvas {
+            width: 5000px; /* Breite der scrollbaren Fläche */
+            height: 5000px; /* Höhe der scrollbaren Fläche */
+            position: relative;
+            background-color: #fafafa; /* Minimaler Kontrast */
+        }
 
+        /* --- Styling für die Punkte --- */
+        .dot {
+            position: absolute;
+            border-radius: 50%;
+            cursor: pointer;
+            /* Basis-Animation für das Erscheinen */
+            transform: scale(0);
+            animation: appear 0.5s ease-out forwards;
+            /* Wichtig für den Platzen-Effekt */
+            transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* Sanfter Schatten */
+        }
+
+        /* Effekt beim Drüberfahren (Hover) */
+        .dot:hover {
+            transform: scale(1.3); /* Leicht vergrößern */
+        }
+
+        /* Die Klasse, die per JS für das "Platzen" hinzugefügt wird */
+        .dot.popped {
+            transform: scale(0); /* Auf Null schrumpfen */
+            opacity: 0; /* Durchsichtig werden */
+            pointer-events: none; /* Nicht mehr klickbar */
+        }
+
+        /* Animation für das erste Erscheinen */
+        @keyframes appear {
+            to { transform: scale(1); }
+        }
+
+        /* Mobile Anpassungen */
         @media (max-width: 600px) {
             h1 { font-size: 2.2rem; }
             header { padding: 20px; }
             .mail-link { bottom: 20px; right: 20px; }
+            /* Auf dem Handy ist die Leinwand etwas kleiner handlicher */
+            #canvas { width: 3000px; height: 3000px; }
         }
     </style>
 </head>
@@ -96,30 +122,83 @@
 
     <a href="mailto:mail@maxgschwendtner.com" class="mail-link">mail@maxgschwendtner.com</a>
 
-    <div class="content">
-        <div class="dot-row p1"><div class="dot"></div></div>
-        <div class="dot-row p4"><div class="dot"></div></div>
-        <div class="dot-row p9"><div class="dot"></div></div>
-        <div class="dot-row p2"><div class="dot"></div></div>
-        <div class="dot-row p5"><div class="dot"></div></div>
-        <div class="dot-row p8"><div class="dot"></div></div>
-        <div class="dot-row p3"><div class="dot"></div></div>
-        <div class="dot-row p7"><div class="dot"></div></div>
-        <div class="dot-row p6"><div class="dot"></div></div>
-        <div class="dot-row p2"><div class="dot"></div></div>
-        <div class="dot-row p5"><div class="dot"></div></div>
-        <div class="dot-row p1"><div class="dot"></div></div>
-        <div class="dot-row p9"><div class="dot"></div></div>
-        <div class="dot-row p4"><div class="dot"></div></div>
-        <div class="dot-row p7"><div class="dot"></div></div>
-        <div class="dot-row p3"><div class="dot"></div></div>
-        <div class="dot-row p8"><div class="dot"></div></div>
-        <div class="dot-row p6"><div class="dot"></div></div>
-        <div class="dot-row p1"><div class="dot"></div></div>
-        <div class="dot-row p4"><div class="dot"></div></div>
-        <div class="dot-row p2"><div class="dot"></div></div>
-        <div class="dot-row p9"><div class="dot"></div></div>
-        </div>
+    <div id="scroll-container">
+        <div id="canvas">
+            </div>
+    </div>
 
+    <script>
+        // --- Konfiguration ---
+        const numberOfDots = 150; // Anzahl der Punkte
+        const minDotSize = 20; // Minimale Größe in Pixel
+        const maxDotSize = 80; // Maximale Größe in Pixel
+
+        // Eine Liste von vordefinierten, ästhetischen Farben
+        const dotColors = [
+            '#FF6B6B', // Rot
+            '#4ECDC4', // Türkis
+            '#45B7D1', // Blau
+            '#F9D661', // Gelb
+            '#FF9F43', // Orange
+            '#6C5CE7', // Lila
+            '#2ECC71'  // Grün
+        ];
+
+        // --- Elemente referenzieren ---
+        const canvas = document.getElementById('canvas');
+        const container = document.getElementById('scroll-container');
+
+        // --- Hilfsfunktion für Zufallszahlen ---
+        function getRandom(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        // --- Funktion zum Erstellen eines Punktes ---
+        function createDot() {
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+
+            // Größe festlegen
+            const size = getRandom(minDotSize, maxDotSize);
+            dot.style.width = `${size}px`;
+            dot.style.height = `${size}px`;
+
+            // Position festlegen (innerhalb der 5000x5000px Canvas)
+            // Wir ziehen die Größe ab, damit der Punkt nicht über den Rand ragt
+            const maxX = canvas.offsetWidth - size;
+            const maxY = canvas.offsetHeight - size;
+            dot.style.left = `${getRandom(0, maxX)}px`;
+            dot.style.top = `${getRandom(0, maxY)}px`;
+
+            // Farbe festlegen
+            dot.style.backgroundColor = dotColors[Math.floor(Math.random() * dotColors.length)];
+
+            // --- Platzen-Interaktion ---
+            dot.addEventListener('mouseenter', function() {
+                // Fügt die Klasse hinzu, die den Punkt schrumpfen lässt
+                dot.classList.add('popped');
+
+                // Optional: Den Punkt nach der Animation komplett entfernen
+                setTimeout(() => {
+                    dot.remove();
+                }, 300); // 300ms ist etwas länger als die CSS-Transition (200ms)
+            });
+
+            canvas.appendChild(dot);
+        }
+
+        // --- Punkte generieren ---
+        for (let i = 0; i < numberOfDots; i++) {
+            createDot();
+        }
+
+        // --- Startposition: In der Mitte der riesigen Leinwand ---
+        window.addEventListener('load', () => {
+            const centerX = (canvas.offsetWidth - container.offsetWidth) / 2;
+            const centerY = (canvas.offsetHeight - container.offsetHeight) / 2;
+            container.scrollLeft = centerX;
+            container.scrollTop = centerY;
+        });
+    </script>
 </body>
 </html>
