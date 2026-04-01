@@ -3,29 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Max Gschwendtner - Interactive Dots</title>
+    <title>Max Gschwendtner | Rhino Edition</title>
     <style>
-        /* --- Basis-Styling & Layout --- */
         body, html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
-            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            font-family: "Inter", sans-serif;
             background-color: #fff;
-            color: #000;
-            -webkit-font-smoothing: antialiased;
-            overflow: hidden; /* Verhindert Standard-Scrollbars, wir scrollen den Container */
+            overflow: hidden;
+            /* Der Rhino Gumball Cursor (SVG als Data-URL) */
+            cursor: url('data:image/svg+xml;utf8,<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><line x1="16" y1="16" x2="32" y2="16" stroke="red" stroke-width="2"/><line x1="16" y1="16" x2="16" y2="0" stroke="green" stroke-width="2"/><circle cx="16" cy="16" r="3" fill="white" stroke="black" stroke-width="1"/></svg>') 16 16, auto;
         }
 
-        /* --- Fixierte Elemente (Header & Mail) --- */
         header {
             position: fixed;
             top: 0;
             left: 0;
             padding: 30px 40px;
-            z-index: 1000; /* Sehr hoch, damit es über allem bleibt */
-            pointer-events: none; /* Klicks gehen durch den Header hindurch... */
+            z-index: 1000;
+            pointer-events: none;
         }
 
         h1 {
@@ -35,7 +33,6 @@
             text-transform: uppercase;
             letter-spacing: -0.04em;
             line-height: 0.9;
-            pointer-events: auto; /* ...aber der Text selbst ist klickbar */
         }
 
         .mail-link {
@@ -49,68 +46,37 @@
             z-index: 1000;
         }
 
-        .mail-link:hover {
-            opacity: 0.5;
-        }
-
-        /* --- Scrollbarer Container (Das Herzstück) --- */
         #scroll-container {
             width: 100vw;
             height: 100vh;
-            overflow: auto; /* Ermöglicht Scrollen in alle Richtungen */
-            cursor: grab; /* Zeigt an, dass man ziehen kann */
+            overflow: auto;
             position: relative;
+            /* Scrollbars verstecken für maximale Immersion */
+            scrollbar-width: none; 
         }
+        #scroll-container::-webkit-scrollbar { display: none; }
 
-        #scroll-container:active {
-            cursor: grabbing; /* Zeigt Ziehen an */
-        }
-
-        /* Die "Leinwand", die viel größer ist als der Bildschirm */
         #canvas {
-            width: 5000px; /* Breite der scrollbaren Fläche */
-            height: 5000px; /* Höhe der scrollbaren Fläche */
+            width: 8000px; /* Noch größerer Raum für mehr "Leere" */
+            height: 8000px;
             position: relative;
-            background-color: #fafafa; /* Minimaler Kontrast */
+            background-color: #ffffff;
         }
 
-        /* --- Styling für die Punkte --- */
         .dot {
             position: absolute;
             border-radius: 50%;
-            cursor: pointer;
-            /* Basis-Animation für das Erscheinen */
-            transform: scale(0);
-            animation: appear 0.5s ease-out forwards;
-            /* Wichtig für den Platzen-Effekt */
-            transition: transform 0.2s ease-out, opacity 0.2s ease-out;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* Sanfter Schatten */
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
         }
 
-        /* Effekt beim Drüberfahren (Hover) */
-        .dot:hover {
-            transform: scale(1.3); /* Leicht vergrößern */
-        }
-
-        /* Die Klasse, die per JS für das "Platzen" hinzugefügt wird */
         .dot.popped {
-            transform: scale(0); /* Auf Null schrumpfen */
-            opacity: 0; /* Durchsichtig werden */
-            pointer-events: none; /* Nicht mehr klickbar */
+            transform: scale(0);
+            opacity: 0;
+            pointer-events: none;
         }
 
-        /* Animation für das erste Erscheinen */
-        @keyframes appear {
-            to { transform: scale(1); }
-        }
-
-        /* Mobile Anpassungen */
         @media (max-width: 600px) {
             h1 { font-size: 2.2rem; }
-            header { padding: 20px; }
-            .mail-link { bottom: 20px; right: 20px; }
-            /* Auf dem Handy ist die Leinwand etwas kleiner handlicher */
-            #canvas { width: 3000px; height: 3000px; }
         }
     </style>
 </head>
@@ -123,81 +89,51 @@
     <a href="mailto:mail@maxgschwendtner.com" class="mail-link">mail@maxgschwendtner.com</a>
 
     <div id="scroll-container">
-        <div id="canvas">
-            </div>
+        <div id="canvas"></div>
     </div>
 
     <script>
-        // --- Konfiguration ---
-        const numberOfDots = 150; // Anzahl der Punkte
-        const minDotSize = 20; // Minimale Größe in Pixel
-        const maxDotSize = 80; // Maximale Größe in Pixel
-
-        // Eine Liste von vordefinierten, ästhetischen Farben
-        const dotColors = [
-            '#FF6B6B', // Rot
-            '#4ECDC4', // Türkis
-            '#45B7D1', // Blau
-            '#F9D661', // Gelb
-            '#FF9F43', // Orange
-            '#6C5CE7', // Lila
-            '#2ECC71'  // Grün
-        ];
-
-        // --- Elemente referenzieren ---
         const canvas = document.getElementById('canvas');
         const container = document.getElementById('scroll-container');
 
-        // --- Hilfsfunktion für Zufallszahlen ---
-        function getRandom(min, max) {
-            return Math.random() * (max - min) + min;
-        }
+        // --- Konfiguration ---
+        const numberOfDots = 60; // Sehr wenige Punkte auf 8000x8000px = viel Leere
+        const dotColors = ['#FFD700', '#000000', '#0000FF']; // Gelb, Schwarz, Blau
 
-        // --- Funktion zum Erstellen eines Punktes ---
         function createDot() {
             const dot = document.createElement('div');
             dot.className = 'dot';
 
-            // Größe festlegen
-            const size = getRandom(minDotSize, maxDotSize);
+            // Größe: Etwas prägnanter
+            const size = Math.random() * (60 - 30) + 30;
             dot.style.width = `${size}px`;
             dot.style.height = `${size}px`;
 
-            // Position festlegen (innerhalb der 5000x5000px Canvas)
-            // Wir ziehen die Größe ab, damit der Punkt nicht über den Rand ragt
-            const maxX = canvas.offsetWidth - size;
-            const maxY = canvas.offsetHeight - size;
-            dot.style.left = `${getRandom(0, maxX)}px`;
-            dot.style.top = `${getRandom(0, maxY)}px`;
+            // Zufällige Position auf der riesigen Fläche
+            dot.style.left = `${Math.random() * (canvas.offsetWidth - size)}px`;
+            dot.style.top = `${Math.random() * (canvas.offsetHeight - size)}px`;
 
-            // Farbe festlegen
+            // Farbe aus dem Set wählen
             dot.style.backgroundColor = dotColors[Math.floor(Math.random() * dotColors.length)];
 
-            // --- Platzen-Interaktion ---
-            dot.addEventListener('mouseenter', function() {
-                // Fügt die Klasse hinzu, die den Punkt schrumpfen lässt
+            // Interaktion
+            dot.addEventListener('mouseenter', () => {
                 dot.classList.add('popped');
-
-                // Optional: Den Punkt nach der Animation komplett entfernen
-                setTimeout(() => {
-                    dot.remove();
-                }, 300); // 300ms ist etwas länger als die CSS-Transition (200ms)
+                setTimeout(() => dot.remove(), 300);
             });
 
             canvas.appendChild(dot);
         }
 
-        // --- Punkte generieren ---
+        // Initialisierung
         for (let i = 0; i < numberOfDots; i++) {
             createDot();
         }
 
-        // --- Startposition: In der Mitte der riesigen Leinwand ---
+        // In die Mitte setzen
         window.addEventListener('load', () => {
-            const centerX = (canvas.offsetWidth - container.offsetWidth) / 2;
-            const centerY = (canvas.offsetHeight - container.offsetHeight) / 2;
-            container.scrollLeft = centerX;
-            container.scrollTop = centerY;
+            container.scrollLeft = (canvas.offsetWidth - window.innerWidth) / 2;
+            container.scrollTop = (canvas.offsetHeight - window.innerHeight) / 2;
         });
     </script>
 </body>
