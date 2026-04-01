@@ -78,3 +78,70 @@
             transform: scale(0);
             opacity: 0;
             pointer-events: none;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>MAX GSCHWENDTNER</h1>
+    </header>
+
+    <a href="mailto:mail@maxgschwendtner.com" class="mail-link">mail@maxgschwendtner.com</a>
+
+    <div id="scroll-container">
+        <div id="canvas"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const container = document.getElementById('scroll-container');
+
+        // --- Konfiguration ---
+        // Trotz riesiger Fläche halten wir die Anzahl gering für vereinzelte Sichtungen
+        const numberOfDots = 120; 
+
+        function createDot() {
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+
+            // Punkte viel kleiner (4px bis 12px)
+            const size = Math.random() * (12 - 4) + 4;
+            dot.style.width = `${size}px`;
+            dot.style.height = `${size}px`;
+
+            // Zufällige Verteilung auf der 16.000px Leinwand
+            const x = Math.random() * (canvas.offsetWidth - size);
+            const y = Math.random() * (canvas.offsetHeight - size);
+            
+            dot.style.left = `${x}px`;
+            dot.style.top = `${y}px`;
+
+            // Platzen-Interaktion
+            dot.addEventListener('mouseenter', () => {
+                dot.classList.add('popped');
+                setTimeout(() => dot.remove(), 200);
+            });
+
+            canvas.appendChild(dot);
+        }
+
+        // Punkte generieren
+        for (let i = 0; i < numberOfDots; i++) {
+            createDot();
+        }
+
+        // Startposition in der absoluten Mitte der 16.000px
+        window.addEventListener('load', () => {
+            const startX = (canvas.offsetWidth - window.innerWidth) / 2;
+            const startY = (canvas.offsetHeight - window.innerHeight) / 2;
+            container.scrollLeft = startX;
+            container.scrollTop = startY;
+        });
+    </script>
+</body>
+</html>
