@@ -3,27 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Max Gschwendtner | Deep Space</title>
+    <title>Max Gschwendtner</title>
     <style>
         body, html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
-            font-family: "Inter", sans-serif;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
             background-color: #fff;
+            color: #000;
             overflow: hidden;
-            /* Rhino Gumball Cursor */
-            cursor: url('data:image/svg+xml;utf8,<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><line x1="16" y1="16" x2="32" y2="16" stroke="red" stroke-width="1.5"/><line x1="16" y1="16" x2="16" y2="0" stroke="green" stroke-width="1.5"/><circle cx="16" cy="16" r="2.5" fill="white" stroke="black" stroke-width="1"/></svg>') 16 16, auto;
+            
+            /* Old School Windows Cursor (Pixel-Style SVG) */
+            cursor: url('data:image/svg+xml;utf8,<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M0 0V22L6 16L11 27L15 25L10 14H18L0 0Z" fill="white" stroke="black" stroke-width="2" stroke-linejoin="miter"/></svg>'), auto;
         }
 
+        /* Fixierte Navigation */
         header {
             position: fixed;
             top: 0;
             left: 0;
             padding: 30px 40px;
             z-index: 1000;
-            pointer-events: none;
+            pointer-events: none; 
         }
 
         h1 {
@@ -33,7 +36,7 @@
             text-transform: uppercase;
             letter-spacing: -0.04em;
             line-height: 0.9;
-            color: #000;
+            pointer-events: auto;
         }
 
         .mail-link {
@@ -46,8 +49,15 @@
             font-weight: 500;
             z-index: 1000;
             letter-spacing: 0.05em;
+            /* Auch hier der Cursor beim Hover */
+            cursor: url('data:image/svg+xml;utf8,<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M0 0V22L6 16L11 27L15 25L10 14H18L0 0Z" fill="white" stroke="black" stroke-width="2" stroke-linejoin="miter"/></svg>'), pointer;
         }
 
+        .mail-link:hover {
+            opacity: 0.5;
+        }
+
+        /* Scroll-Bereich */
         #scroll-container {
             width: 100vw;
             height: 100vh;
@@ -56,22 +66,24 @@
             scrollbar-width: none; 
             -ms-overflow-style: none;
         }
-        #scroll-container::-webkit-scrollbar { display: none; }
+        
+        #scroll-container::-webkit-scrollbar { 
+            display: none; 
+        }
 
         #canvas {
-            /* Hintergrund vervierfacht (von 8000 auf 16000) */
             width: 16000px; 
             height: 16000px;
             position: relative;
             background-color: #ffffff;
         }
 
+        /* Die winzigen schwarzen Punkte */
         .dot {
             position: absolute;
-            background-color: #000; /* Alle Punkte schwarz */
+            background-color: #000;
             border-radius: 50%;
-            /* Schnellerer "Pop"-Effekt */
-            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.1s ease;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease;
         }
 
         .dot.popped {
@@ -81,7 +93,9 @@
         }
 
         @media (max-width: 600px) {
-            h1 { font-size: 2rem; }
+            h1 { font-size: 2.2rem; }
+            header { padding: 20px; }
+            .mail-link { bottom: 20px; right: 20px; }
         }
     </style>
 </head>
@@ -94,53 +108,44 @@
     <a href="mailto:mail@maxgschwendtner.com" class="mail-link">mail@maxgschwendtner.com</a>
 
     <div id="scroll-container">
-        <div id="canvas"></div>
+        <div id="canvas">
+            </div>
     </div>
 
     <script>
         const canvas = document.getElementById('canvas');
         const container = document.getElementById('scroll-container');
 
-        // --- Konfiguration ---
-        // Trotz riesiger Fläche halten wir die Anzahl gering für vereinzelte Sichtungen
-        const numberOfDots = 120; 
+        const numberOfDots = 180; // Leicht erhöht bei 16000px Fläche
 
         function createDot() {
             const dot = document.createElement('div');
             dot.className = 'dot';
 
-            // Punkte viel kleiner (4px bis 12px)
-            const size = Math.random() * (12 - 4) + 4;
+            const size = Math.random() * (5 - 2) + 2; // Sehr klein: 2px bis 5px
             dot.style.width = `${size}px`;
             dot.style.height = `${size}px`;
 
-            // Zufällige Verteilung auf der 16.000px Leinwand
-            const x = Math.random() * (canvas.offsetWidth - size);
-            const y = Math.random() * (canvas.offsetHeight - size);
-            
-            dot.style.left = `${x}px`;
-            dot.style.top = `${y}px`;
+            const maxX = canvas.offsetWidth - size;
+            const maxY = canvas.offsetHeight - size;
+            dot.style.left = `${Math.random() * maxX}px`;
+            dot.style.top = `${Math.random() * maxY}px`;
 
-            // Platzen-Interaktion
             dot.addEventListener('mouseenter', () => {
                 dot.classList.add('popped');
-                setTimeout(() => dot.remove(), 200);
+                setTimeout(() => dot.remove(), 250);
             });
 
             canvas.appendChild(dot);
         }
 
-        // Punkte generieren
         for (let i = 0; i < numberOfDots; i++) {
             createDot();
         }
 
-        // Startposition in der absoluten Mitte der 16.000px
         window.addEventListener('load', () => {
-            const startX = (canvas.offsetWidth - window.innerWidth) / 2;
-            const startY = (canvas.offsetHeight - window.innerHeight) / 2;
-            container.scrollLeft = startX;
-            container.scrollTop = startY;
+            container.scrollLeft = (canvas.offsetWidth - window.innerWidth) / 2;
+            container.scrollTop = (canvas.offsetHeight - window.innerHeight) / 2;
         });
     </script>
 </body>
