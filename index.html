@@ -5,152 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Max Gschwendtner</title>
     <style>
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; /* Verhindert das normale Scrollen der Seite */
-            font-family: "Inter", sans-serif;
-            background-color: #fff;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        /* UI Elemente */
-        header {
-            position: fixed; top: 0; left: 0; padding: 30px 40px;
-            z-index: 100; pointer-events: none;
-        }
-        h1 { 
-            font-weight: 800; font-size: 3.5rem; margin: 0;
-            text-transform: uppercase; letter-spacing: -0.04em; line-height: 0.9;
-        }
-        .mail-link {
-            position: fixed; bottom: 30px; right: 40px;
-            font-size: 1rem; text-decoration: none; color: #000;
-            font-weight: 500; z-index: 100;
-        }
-
-        /* Der Spieler (Gelber Punkt) */
-        #player {
-            position: absolute;
-            width: 18px; height: 18px;
-            background-color: #FFD700;
-            border-radius: 50%;
-            z-index: 50;
-            transform: translate(-50%, -50%);
-        }
-
-        /* Die Plattformen (Schwarze Punkte) */
-        .dot {
-            position: absolute;
-            width: 10px; height: 10px;
-            background-color: #000;
-            border-radius: 50%;
-        }
-
-        @media (max-width: 600px) {
-            h1 { font-size: 2.2rem; }
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #fff; }
+        header { position: fixed; top: 0; left: 0; padding: 30px 40px; pointer-events: none; z-index: 100; }
+        h1 { font-weight: 800; font-size: 3.5rem; margin: 0; text-transform: uppercase; letter-spacing: -0.04em; }
+        .mail-link { position: fixed; bottom: 30px; right: 40px; font-size: 1rem; text-decoration: none; color: #000; font-weight: 500; z-index: 100; }
+        #player { position: absolute; width: 18px; height: 18px; background-color: #FFD700; border-radius: 50%; z-index: 50; transform: translate(-50%, -50%); }
+        .dot { position: absolute; width: 10px; height: 10px; background-color: #000; border-radius: 50%; }
     </style>
 </head>
 <body>
-
     <header><h1>MAX GSCHWENDTNER</h1></header>
     <a href="mailto:mail@maxgschwendtner.com" class="mail-link">mail@maxgschwendtner.com</a>
-
     <div id="player"></div>
-
     <script>
         const playerEl = document.getElementById('player');
-        
-        // Spiel-Variablen
-        let pX = window.innerWidth / 2;
-        let pY = window.innerHeight / 2; // Start in der Mitte
-        let vX = 0;
-        let vY = 0;
-        const gravity = 0.3;
-        const jumpStrength = -11;
-        const speed = 0.8;
-        
-        let platforms = [];
-        let moveLeft = false;
-        let moveRight = false;
+        let pX = window.innerWidth/2, pY = window.innerHeight/2, vX = 0, vY = 0;
+        const gravity = 0.3, jumpStrength = -11, speed = 0.8;
+        let platforms = [], moveLeft = false, moveRight = false;
 
-        // Plattformen initialisieren (unterhalb der Mitte)
         function createPlatform(yPos) {
-            const el = document.createElement('div');
-            el.className = 'dot';
+            const el = document.createElement('div'); el.className = 'dot';
             const x = Math.random() * (window.innerWidth - 60) + 30;
-            el.style.left = x + 'px';
-            el.style.top = yPos + 'px';
+            el.style.left = x + 'px'; el.style.top = yPos + 'px';
             document.body.appendChild(el);
             return { x, y: yPos, el };
         }
+        for (let i = 0; i < 8; i++) platforms.push(createPlatform(window.innerHeight + (i * 150)));
 
-        // Erste Plattformen generieren
-        for (let i = 0; i < 8; i++) {
-            platforms.push(createPlatform(window.innerHeight + (i * 150)));
-        }
-
-        // Steuerung Desktop
-        window.addEventListener('keydown', e => {
-            if (e.key === 'ArrowLeft') moveLeft = true;
-            if (e.key === 'ArrowRight') moveRight = true;
-        });
-        window.addEventListener('keyup', e => {
-            if (e.key === 'ArrowLeft') moveLeft = false;
-            if (e.key === 'ArrowRight') moveRight = false;
-        });
-
-        // Steuerung Mobile
-        window.addEventListener('touchstart', e => {
-            const touchX = e.touches[0].clientX;
-            if (touchX < window.innerWidth / 2) moveLeft = true;
-            else moveRight = true;
-        });
-        window.addEventListener('touchend', () => {
-            moveLeft = false; moveRight = false;
-        });
+        window.addEventListener('keydown', e => { if(e.key==='ArrowLeft') moveLeft=true; if(e.key==='ArrowRight') moveRight=true; });
+        window.addEventListener('keyup', e => { if(e.key==='ArrowLeft') moveLeft=false; if(e.key==='ArrowRight') moveRight=false; });
+        window.addEventListener('touchstart', e => { const tX = e.touches[0].clientX; if(tX < window.innerWidth/2) moveLeft=true; else moveRight=true; });
+        window.addEventListener('touchend', () => { moveLeft=false; moveRight=false; });
 
         function gameLoop() {
-            // Horizontale Bewegung
-            if (moveLeft) vX -= speed;
-            if (moveRight) vX += speed;
-            vX *= 0.85; // Reibung
-            pX += vX;
-
-            // Vertikale Bewegung (Gravitation)
-            vY += gravity;
-            pY += vY;
-
-            // Screen Wrap (Links raus, rechts rein)
-            if (pX < 0) pX = window.innerWidth;
-            if (pX > window.innerWidth) pX = 0;
-
-            // Kamera-Logik: Wenn der Spieler die obere Hälfte erreicht, 
-            // bewegen wir die Plattformen nach unten statt den Spieler nach oben.
-            if (pY < window.innerHeight / 2) {
-                let diff = window.innerHeight / 2 - pY;
-                pY = window.innerHeight / 2;
-                platforms.forEach(plat => {
-                    plat.y += diff;
-                    plat.el.style.top = plat.y + 'px';
-                });
+            if(moveLeft) vX -= speed; if(moveRight) vX += speed;
+            vX *= 0.85; pX += vX; vY += gravity; pY += vY;
+            if(pX < 0) pX = window.innerWidth; if(pX > window.innerWidth) pX = 0;
+            if(pY < window.innerHeight/2) {
+                let diff = window.innerHeight/2 - pY; pY = window.innerHeight/2;
+                platforms.forEach(p => { p.y += diff; p.el.style.top = p.y + 'px'; });
             }
-
-            // Neue Plattformen unten generieren & alte oben löschen
-            if (platforms[0].y > window.innerHeight + 100) {
-                const old = platforms.shift();
-                old.el.remove();
-                // Neue Plattform ganz weit unten hinzufügen
-                const lastY = platforms[platforms.length - 1].y;
-                platforms.push(createPlatform(lastY - 180));
+            if(platforms[0].y > window.innerHeight + 100) {
+                const old = platforms.shift(); old.el.remove();
+                platforms.push(createPlatform(platforms[platforms.length-1].y - 180));
             }
-
-            // Kollisionsabfrage (nur wenn man nach unten fällt)
-            if (vY > 0) {
-                platforms.forEach(plat => {
-                    const dx = pX - plat.x;
-                    const dy = pY - plat.y;
-                    const distance = Math.sqrt(dx*dx + dy*dy);
-                    
-                    if (distance < 25) { // Trefferradius
-                        vY = jumpStrength;
+            if(vY > 0) platforms.forEach(p => {
+                if(Math.hypot(pX-p.x, pY-p.y) < 25) vY = jumpStrength;
+            });
+            if(pY > window.innerHeight + 50) { pX=window.innerWidth/2; pY=window.innerHeight/2; vY=0; }
+            playerEl.style.left = pX + 'px'; playerEl.style.top = pY + 'px';
+            requestAnimationFrame(gameLoop);
+        }
+        gameLoop();
+    </script>
+</body>
+</html>
