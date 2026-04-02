@@ -31,7 +31,7 @@
         .footer { text-align: right; font-size: 11px; font-weight: 400; color: #000; pointer-events: auto; }
         .footer a { color: #000; text-decoration: none; }
 
-        /* Start-Button: Nur Text, keine Umrandung */
+        /* Start-Button: Nur Text */
         #start-btn {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: none; border: none; color: #000;
@@ -62,7 +62,7 @@
         const startBtn = document.getElementById('start-btn');
 
         let width, height, player, platforms = [], gravity = 0.3, jumpStrength = -8;
-        let maxPlatforms = 12; 
+        let maxPlatforms = 12, goldenRatio; 
         let tilt = 0, isPlaying = false;
 
         function init() {
@@ -70,11 +70,16 @@
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
+            
+            // Berechne den Goldenen Schnitt für die vertikale Sprungmitte
+            goldenRatio = height * 0.618; 
 
-            player = { x: width / 2, y: height / 2, radius: 5, vx: 0, vy: 0 };
+            // Der Punkt startet am Goldenen Schnitt
+            player = { x: width / 2, y: goldenRatio, radius: 5, vx: 0, vy: 0 };
             
             platforms = [];
-            platforms.push({ x: width / 2 - 25, y: height / 2 + 40, w: 50, h: 1 }); 
+            // Das Start-Podest etwas tiefer als der Spieler
+            platforms.push({ x: width / 2 - 25, y: goldenRatio + 50, w: 50, h: 1 }); 
             
             for(let i = 1; i < maxPlatforms; i++){
                 generatePlatform();
@@ -83,7 +88,8 @@
 
         function generatePlatform() {
             let lastY = platforms.length > 0 ? platforms[platforms.length-1].y : height;
-            let newY = lastY - (height / 12); // Noch engere Abstände für besseren Flow
+            // Dichte Plattformen für flüssiges Gameplay
+            let newY = lastY - (height / 15); 
             
             platforms.push({
                 x: Math.random() * (width - 50),
@@ -112,37 +118,43 @@
             if(!isPlaying) return;
             ctx.clearRect(0, 0, width, height);
 
-            player.vx = tilt * 0.5;
+            player.vx = tilt * 0.6; // Empfindlichkeit erhöht
             player.vy += gravity;
             player.x += player.vx;
             player.y += player.vy;
 
+            // Screen Wrap
             if (player.x < 0) player.x = width;
             if (player.x > width) player.x = 0;
 
-            if (player.y < height / 2) {
-                let diff = height / 2 - player.y;
-                player.y = height / 2;
-                platforms.forEach(p => p.y += diff);
+            // Kamera-Follow-Logik mit Goldenem Schnitt
+            if (player.y < goldenRatio) {
+                let diff = goldenRatio - player.y;
+                player.y = goldenRatio; // Fixiere Spieler auf der Golden-Ratio-Höhe
+                platforms.forEach(p => p.y += diff); // Schiebe Plattformen nach unten
             }
 
+            // Zeichne Podeste
             ctx.fillStyle = '#000';
             platforms.forEach((p) => {
                 ctx.fillRect(p.x, p.y, p.w, p.h);
-                if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y + player.radius > p.y && player.y + player.radius < p.y + 8) {
+                if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y + player.radius > p.y && player.y + player.radius < p.y + 10) {
                     player.vy = jumpStrength;
                 }
             });
 
+            // Podeste recyceln
             platforms = platforms.filter(p => p.y < height);
             while(platforms.length < maxPlatforms) generatePlatform();
 
+            // Springender Punkt (SCHWARZ & KLEIN)
             ctx.fillStyle = '#000';
             ctx.beginPath();
             ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
             ctx.fill();
 
-            if (player.y > height + 50) init();
+            // Game Over Reset
+            if (player.y > height + 100) init();
             requestAnimationFrame(animate);
         }
 
