@@ -7,7 +7,7 @@
     <style>
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow-x: hidden;
+            overflow: hidden; /* Verhindert das normale Scrollen der Seite */
             font-family: "Inter", sans-serif;
             background-color: #fff;
             -webkit-tap-highlight-color: transparent;
@@ -28,29 +28,22 @@
             font-weight: 500; z-index: 100;
         }
 
-        /* Das Spielfeld */
-        #game-container {
-            position: relative;
-            width: 100%;
-            min-height: 15000px; /* Deine unendliche Länge */
-            background: white;
-        }
-
-        .dot {
-            position: absolute;
-            width: 12px; height: 12px;
-            background-color: #000;
-            border-radius: 50%;
-        }
-
         /* Der Spieler (Gelber Punkt) */
         #player {
-            position: fixed; /* Bleibt im Sichtfeld */
-            width: 16px; height: 16px;
-            background-color: #FFD700; /* Gold/Gelb */
+            position: absolute;
+            width: 18px; height: 18px;
+            background-color: #FFD700;
             border-radius: 50%;
             z-index: 50;
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            transform: translate(-50%, -50%);
+        }
+
+        /* Die Plattformen (Schwarze Punkte) */
+        .dot {
+            position: absolute;
+            width: 10px; height: 10px;
+            background-color: #000;
+            border-radius: 50%;
         }
 
         @media (max-width: 600px) {
@@ -63,39 +56,41 @@
     <header><h1>MAX GSCHWENDTNER</h1></header>
     <a href="mailto:mail@maxgschwendtner.com" class="mail-link">mail@maxgschwendtner.com</a>
 
-    <div id="game-container">
-        <div id="player"></div>
-        </div>
+    <div id="player"></div>
 
     <script>
-        const player = document.getElementById('player');
-        const container = document.getElementById('game-container');
+        const playerEl = document.getElementById('player');
         
+        // Spiel-Variablen
         let pX = window.innerWidth / 2;
-        let pY = 150; // Position im Viewport
+        let pY = window.innerHeight / 2; // Start in der Mitte
         let vX = 0;
         let vY = 0;
-        let scrollY = 0;
-        const gravity = 0.25;
-        const jumpStrength = -10;
+        const gravity = 0.3;
+        const jumpStrength = -11;
+        const speed = 0.8;
         
-        // Plattformen generieren
-        const platforms = [];
-        for (let i = 0; i < 150; i++) {
-            const dot = document.createElement('div');
-            dot.className = 'dot';
-            const x = Math.random() * (window.innerWidth - 40) + 20;
-            const y = i * 150 + 200; 
-            dot.style.left = x + 'px';
-            dot.style.top = y + 'px';
-            container.appendChild(dot);
-            platforms.push({ x, y, el: dot });
-        }
-
-        // Steuerung
+        let platforms = [];
         let moveLeft = false;
         let moveRight = false;
 
+        // Plattformen initialisieren (unterhalb der Mitte)
+        function createPlatform(yPos) {
+            const el = document.createElement('div');
+            el.className = 'dot';
+            const x = Math.random() * (window.innerWidth - 60) + 30;
+            el.style.left = x + 'px';
+            el.style.top = yPos + 'px';
+            document.body.appendChild(el);
+            return { x, y: yPos, el };
+        }
+
+        // Erste Plattformen generieren
+        for (let i = 0; i < 8; i++) {
+            platforms.push(createPlatform(window.innerHeight + (i * 150)));
+        }
+
+        // Steuerung Desktop
         window.addEventListener('keydown', e => {
             if (e.key === 'ArrowLeft') moveLeft = true;
             if (e.key === 'ArrowRight') moveRight = true;
@@ -105,25 +100,57 @@
             if (e.key === 'ArrowRight') moveRight = false;
         });
 
-        // Mobile Steuerung
+        // Steuerung Mobile
         window.addEventListener('touchstart', e => {
             const touchX = e.touches[0].clientX;
             if (touchX < window.innerWidth / 2) moveLeft = true;
             else moveRight = true;
         });
         window.addEventListener('touchend', () => {
-            moveLeft = false;
-            moveRight = false;
+            moveLeft = false; moveRight = false;
         });
 
-        function update() {
-            // Physik
-            if (moveLeft) vX -= 0.8;
-            if (moveRight) vX += 0.8;
-            vX *= 0.9; // Reibung
+        function gameLoop() {
+            // Horizontale Bewegung
+            if (moveLeft) vX -= speed;
+            if (moveRight) vX += speed;
+            vX *= 0.85; // Reibung
             pX += vX;
-            
+
+            // Vertikale Bewegung (Gravitation)
             vY += gravity;
             pY += vY;
 
-            // Screen Wrap (Links
+            // Screen Wrap (Links raus, rechts rein)
+            if (pX < 0) pX = window.innerWidth;
+            if (pX > window.innerWidth) pX = 0;
+
+            // Kamera-Logik: Wenn der Spieler die obere Hälfte erreicht, 
+            // bewegen wir die Plattformen nach unten statt den Spieler nach oben.
+            if (pY < window.innerHeight / 2) {
+                let diff = window.innerHeight / 2 - pY;
+                pY = window.innerHeight / 2;
+                platforms.forEach(plat => {
+                    plat.y += diff;
+                    plat.el.style.top = plat.y + 'px';
+                });
+            }
+
+            // Neue Plattformen unten generieren & alte oben löschen
+            if (platforms[0].y > window.innerHeight + 100) {
+                const old = platforms.shift();
+                old.el.remove();
+                // Neue Plattform ganz weit unten hinzufügen
+                const lastY = platforms[platforms.length - 1].y;
+                platforms.push(createPlatform(lastY - 180));
+            }
+
+            // Kollisionsabfrage (nur wenn man nach unten fällt)
+            if (vY > 0) {
+                platforms.forEach(plat => {
+                    const dx = pX - plat.x;
+                    const dy = pY - plat.y;
+                    const distance = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (distance < 25) { // Trefferradius
+                        vY = jumpStrength;
