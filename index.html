@@ -5,31 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Max Gschwendtner - Jump</title>
     <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: Helvetica, Arial, sans-serif; font-weight: 300; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: Helvetica, Arial, sans-serif; }
         canvas { display: block; }
 
-        /* UI-Layout (Name & Mail) wie im Screenshot */
+        /* UI-Layout */
         #ui {
             position: absolute; width: 100%; top: 0; left: 0; pointer-events: none;
             display: flex; flex-direction: column; justify-content: space-between; height: 100vh;
-            padding: 20px; box-sizing: border-box;
+            padding: 30px; box-sizing: border-box;
         }
 
-        /* Sehr dünne Schrift-Art für den Namen (oben links) */
-        .header { text-align: left; font-size: 24px; font-weight: 200; line-height: 1.1; letter-spacing: 1px; color: #000; }
+        /* Name oben links: BOLD wie im Screenshot */
+        .header { 
+            text-align: left; 
+            font-size: 32px; 
+            font-weight: 900; /* Extra Fett */
+            line-height: 0.9; 
+            letter-spacing: -1px; 
+            color: #000; 
+            text-transform: uppercase;
+        }
 
-        /* Mail-Text (unten rechts) */
-        .footer { text-align: right; font-size: 10px; font-weight: 400; color: #000; pointer-events: auto; }
+        /* Kleiner schwarzer Punkt unter dem Namen */
+        .dot {
+            width: 6px;
+            height: 6px;
+            background-color: #000;
+            border-radius: 50%;
+            margin-top: 15px;
+        }
+
+        /* Mail unten rechts */
+        .footer { text-align: right; font-size: 12px; font-weight: 400; color: #000; pointer-events: auto; }
         .footer a { color: #000; text-decoration: none; }
 
-        /* Start-Button: Kein Block, nur dünne Umrandung */
+        /* Start-Button: Nur Outline */
         #start-btn {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            padding: 10px 20px;
-            background: transparent; color: #000;
-            border: 1px solid #000; /* Dünne Umrandung */
-            cursor: pointer; pointer-events: auto;
-            font-size: 14px; font-family: sans-serif;
+            position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%);
+            padding: 10px 20px; background: transparent; color: #000;
+            border: 1px solid #000; cursor: pointer; pointer-events: auto;
+            font-size: 14px; font-weight: bold;
         }
     </style>
 </head>
@@ -38,14 +53,13 @@
     <div id="ui">
         <div class="header">
             MAX<br>GSCHWENDTNER
-        </div>
+            <div class="dot"></div> </div>
         <div class="footer">
             <a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a>
         </div>
     </div>
 
-    <button id="start-btn">Start</button>
-    
+    <button id="start-btn">START GAME</button>
     <canvas id="gameCanvas"></canvas>
 
     <script>
@@ -53,7 +67,7 @@
         const ctx = canvas.getContext('2d');
         const startBtn = document.getElementById('start-btn');
 
-        let width, height, player, platforms = [], gravity = 0.4, jumpStrength = -10, maxPlatforms = 8;
+        let width, height, player, platforms = [], gravity = 0.35, jumpStrength = -9, maxPlatforms = 7;
         let tilt = 0, isPlaying = false;
 
         function init() {
@@ -62,38 +76,33 @@
             canvas.width = width;
             canvas.height = height;
 
-            player = { x: width / 2 - 10, y: height / 2, w: 20, h: 20, vx: 0, vy: 0 };
+            player = { x: width / 2, y: height / 2, radius: 8, vx: 0, vy: 0 };
             
             platforms = [];
-            // Start-Plattform
-            platforms.push({ x: width / 2 - 25, y: height / 2 + 50, w: 50, h: 2 }); // Dünnes Podest
-            // Erste Podeste generieren
+            // Erste Plattform direkt unter dem Spieler
+            platforms.push({ x: width / 2 - 30, y: height / 2 + 50, w: 60, h: 1 }); 
+            
             for(let i = 1; i < maxPlatforms; i++){
                 generatePlatform(i);
             }
         }
 
         function generatePlatform(index) {
-            let y = height / maxPlatforms * (maxPlatforms - index);
-            if(platforms.length > 0) y = platforms[platforms.length-1].y - (height / maxPlatforms);
-            
+            let y = platforms.length > 0 ? platforms[platforms.length-1].y - (height / 6) : height * 0.8;
             platforms.push({
-                x: Math.random() * (width - 60),
+                x: Math.random() * (width - 70),
                 y: y,
-                w: 60,
-                h: 2 // Sehr dünne Podeste
+                w: 70,
+                h: 1 // Hauchdünne Linie (1px)
             });
         }
 
-        // Steuerung: Neigen (iPhone)
         function handleOrientation(event) { tilt = event.gamma; }
 
         startBtn.addEventListener('click', () => {
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(response => {
-                    if (response === 'granted') {
-                        window.addEventListener('deviceorientation', handleOrientation);
-                    }
+                DeviceOrientationEvent.requestPermission().then(res => {
+                    if (res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
                 });
             } else {
                 window.addEventListener('deviceorientation', handleOrientation);
@@ -105,51 +114,41 @@
 
         function update() {
             if(!isPlaying) return;
-
             ctx.clearRect(0, 0, width, height);
 
-            player.vx = tilt * 0.5;
+            player.vx = tilt * 0.6;
             player.vy += gravity;
             player.x += player.vx;
             player.y += player.vy;
 
-            // Rand-Teleport
             if (player.x < 0) player.x = width;
             if (player.x > width) player.x = 0;
 
-            // Kamera-Effekt: Unendliches Scrollen
             if (player.y < height / 2) {
                 let diff = height / 2 - player.y;
                 player.y = height / 2;
                 platforms.forEach(p => p.y += diff);
             }
 
-            // Podeste (Schwarze, dünne Linien)
+            // Zeichne Podeste (1px dünn)
             ctx.fillStyle = '#000';
-            platforms.forEach((p, index) => {
+            platforms.forEach((p) => {
                 ctx.fillRect(p.x, p.y, p.w, p.h);
-
-                // Kollision beim Runterfallen
-                if (player.vy > 0 && player.x + player.w > p.x && player.x < p.x + p.w && player.y + player.h > p.y && player.y + player.h < p.y + p.h + 10) {
+                if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y + player.radius > p.y && player.y + player.radius < p.y + 10) {
                     player.vy = jumpStrength;
                 }
             });
 
-            // Alte Podeste entfernen, neue Podeste automatisch erzeugen
             platforms = platforms.filter(p => p.y < height);
-            if(platforms.length < maxPlatforms){
-                generatePlatform(platforms.length);
-            }
+            while(platforms.length < maxPlatforms) generatePlatform();
 
-            // Spieler (Gelber Punkt)
+            // Gelber Punkt (Spieler)
             ctx.fillStyle = '#FFD700';
             ctx.beginPath();
-            ctx.arc(player.x, player.y, 10, 0, Math.PI * 2);
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Game Over Reset
             if (player.y > height) init();
-
             requestAnimationFrame(update);
         }
 
