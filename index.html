@@ -5,179 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Max Gschwendtner</title>
     <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: Helvetica, Arial, sans-serif; }
-        canvas { display: block; }
-
-        /* UI-Layout */
-        #ui {
-            position: absolute; width: 100%; top: 0; left: 0; pointer-events: none;
-            display: flex; flex-direction: column; justify-content: space-between; height: 100vh;
-            padding: 30px; box-sizing: border-box;
-            z-index: 10;
-        }
-
-        /* Name oben links: BOLD */
-        .header { 
-            text-align: left; 
-            font-size: 32px; 
-            font-weight: 900; 
-            line-height: 0.9; 
-            letter-spacing: -1px; 
-            color: #000; 
-            text-transform: uppercase;
-        }
-
-        /* Mail unten rechts */
-        .footer { text-align: right; font-size: 11px; font-weight: 400; color: #000; pointer-events: auto; }
-        .footer a { color: #000; text-decoration: none; }
-
-        /* Start-Button: Nur Text */
-        #start-btn {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: none; border: none; color: #000;
-            cursor: pointer; pointer-events: auto;
-            font-size: 14px; font-weight: bold; letter-spacing: 2px;
-            text-transform: uppercase;
-            padding: 20px;
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #fff; }
+        header { position: fixed; top: 0; left: 0; padding: 30px 40px; pointer-events: none; z-index: 100; }
+        h1 { font-weight: 800; font-size: 3.5rem; margin: 0; text-transform: uppercase; letter-spacing: -0.04em; }
+        .mail-link { position: fixed; bottom: 30px; right: 40px; font-size: 1rem; text-decoration: none; color: #000; font-weight: 500; z-index: 100; }
+        #player { position: absolute; width: 18px; height: 18px; background-color: #FFD700; border-radius: 50%; z-index: 50; transform: translate(-50%, -50%); }
+        .dot { position: absolute; width: 10px; height: 10px; background-color: #000; border-radius: 50%; }
     </style>
 </head>
 <body>
-
-    <div id="ui">
-        <div class="header">
-            MAX<br>GSCHWENDTNER
-        </div>
-        <div class="footer">
-            <a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a>
-        </div>
-    </div>
-
-    <button id="start-btn">START</button>
-    <canvas id="gameCanvas"></canvas>
-
+    <header><h1>MAX GSCHWENDTNER</h1></header>
+    <a href="mailto:mail@maxgschwendtner.com" class="mail-link">mail@maxgschwendtner.com</a>
+    <div id="player"></div>
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const startBtn = document.getElementById('start-btn');
+        const playerEl = document.getElementById('player');
+        let pX = window.innerWidth/2, pY = window.innerHeight/2, vX = 0, vY = 0;
+        const gravity = 0.3, jumpStrength = -11, speed = 0.8;
+        let platforms = [], moveLeft = false, moveRight = false;
 
-        let width, height, player, platforms = [], gravity = 0.3, jumpStrength = -8;
-        let maxPlatforms = 15; // Mehr Plattformen für Dichte
-        let tilt = 0, isPlaying = false, goldenRatio; 
-        
-        // Liste der verfügbaren Buchstaben (kleingeschrieben)
-        const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
-
-        function init() {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
-
-            // Berechne den Goldenen Schnitt für die vertikale Sprungmitte
-            goldenRatio = height * 0.618; 
-
-            // Der Punkt startet als zufälliger kleingeschriebener Buchstabe
-            player = { 
-                x: width / 2, 
-                y: goldenRatio, 
-                char: alphabet[Math.floor(Math.random() * alphabet.length)], 
-                fontSize: 18, 
-                vx: 0, 
-                vy: 0 
-            };
-            
-            platforms = [];
-            // Start-Podest, etwas tiefer
-            generatePlatform(goldenRatio + 50); 
-            
-            for(let i = 1; i < maxPlatforms; i++){
-                generatePlatform();
-            }
+        function createPlatform(yPos) {
+            const el = document.createElement('div'); el.className = 'dot';
+            const x = Math.random() * (window.innerWidth - 60) + 30;
+            el.style.left = x + 'px'; el.style.top = yPos + 'px';
+            document.body.appendChild(el);
+            return { x, y: yPos, el };
         }
+        for (let i = 0; i < 8; i++) platforms.push(createPlatform(window.innerHeight + (i * 150)));
 
-        function generatePlatform(y = null) {
-            let lastY = platforms.length > 0 ? platforms[platforms.length-1].y : height;
-            let newY = y ? y : lastY - (height / 18); // Dichte Plattformen
-            
-            // Variierende Länge und Graustufe
-            let platformWidth = Math.random() * 40 + 30; // 30px - 70px
-            let grayValue = Math.floor(Math.random() * 150) + 50; // Grautöne 50-200 (heller)
-            
-            platforms.push({
-                x: Math.random() * (width - platformWidth),
-                y: newY,
-                w: platformWidth,
-                h: 1, // Hauchdünne Linien
-                color: `rgb(${grayValue}, ${grayValue}, ${grayValue})`
+        window.addEventListener('keydown', e => { if(e.key==='ArrowLeft') moveLeft=true; if(e.key==='ArrowRight') moveRight=true; });
+        window.addEventListener('keyup', e => { if(e.key==='ArrowLeft') moveLeft=false; if(e.key==='ArrowRight') moveRight=false; });
+        window.addEventListener('touchstart', e => { const tX = e.touches[0].clientX; if(tX < window.innerWidth/2) moveLeft=true; else moveRight=true; });
+        window.addEventListener('touchend', () => { moveLeft=false; moveRight=false; });
+
+        function gameLoop() {
+            if(moveLeft) vX -= speed; if(moveRight) vX += speed;
+            vX *= 0.85; pX += vX; vY += gravity; pY += vY;
+            if(pX < 0) pX = window.innerWidth; if(pX > window.innerWidth) pX = 0;
+            if(pY < window.innerHeight/2) {
+                let diff = window.innerHeight/2 - pY; pY = window.innerHeight/2;
+                platforms.forEach(p => { p.y += diff; p.el.style.top = p.y + 'px'; });
+            }
+            if(platforms[0].y > window.innerHeight + 100) {
+                const old = platforms.shift(); old.el.remove();
+                platforms.push(createPlatform(platforms[platforms.length-1].y - 180));
+            }
+            if(vY > 0) platforms.forEach(p => {
+                if(Math.hypot(pX-p.x, pY-p.y) < 25) vY = jumpStrength;
             });
+            if(pY > window.innerHeight + 50) { pX=window.innerWidth/2; pY=window.innerHeight/2; vY=0; }
+            playerEl.style.left = pX + 'px'; playerEl.style.top = pY + 'px';
+            requestAnimationFrame(gameLoop);
         }
-
-        function handleOrientation(event) { tilt = event.gamma; }
-
-        startBtn.addEventListener('click', () => {
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(res => {
-                    if (res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
-                });
-            } else {
-                window.addEventListener('deviceorientation', handleOrientation);
-            }
-            startBtn.style.display = 'none';
-            isPlaying = true;
-            animate();
-        });
-
-        function animate() {
-            if(!isPlaying) return;
-            ctx.clearRect(0, 0, width, height);
-
-            player.vx = tilt * 0.6; // Empfindlichkeit
-            player.vy += gravity;
-            player.x += player.vx;
-            player.y += player.vy;
-
-            // Screen Wrap
-            if (player.x < 0) player.x = width;
-            if (player.x > width) player.x = 0;
-
-            // Kamera-Follow-Logik mit Goldenem Schnitt
-            if (player.y < goldenRatio) {
-                let diff = goldenRatio - player.y;
-                player.y = goldenRatio; // Fixiere Spieler auf der Golden-Ratio-Höhe
-                platforms.forEach(p => p.y += diff); // Schiebe Plattformen nach unten
-            }
-
-            // Zeichne Podeste (Dünne Linien, variierende Farben/Längen)
-            platforms.forEach((p) => {
-                ctx.fillStyle = p.color; // Nutzung der spezifischen Graustufe
-                ctx.fillRect(p.x, p.y, p.w, p.h);
-
-                // Kollision beim Runterfallen
-                if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y > p.y && player.y < p.y + 10) {
-                    player.vy = jumpStrength;
-                    // Wechsel des Buchstabens bei Kollision
-                    player.char = alphabet[Math.floor(Math.random() * alphabet.length)];
-                }
-            });
-
-            // Podeste recyceln
-            platforms = platforms.filter(p => p.y < height);
-            while(platforms.length < maxPlatforms) generatePlatform();
-
-            // Zeichne Spieler als Buchstabe
-            ctx.fillStyle = '#000';
-            ctx.font = `${player.fontSize}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.fillText(player.char, player.x, player.y);
-
-            // Game Over Reset
-            if (player.y > height + 100) init();
-            requestAnimationFrame(animate);
-        }
-
-        window.addEventListener('resize', init);
-        init();
+        gameLoop();
     </script>
 </body>
 </html>
