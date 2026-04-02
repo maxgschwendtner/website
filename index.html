@@ -62,40 +62,54 @@
         const startBtn = document.getElementById('start-btn');
 
         let width, height, player, platforms = [], gravity = 0.3, jumpStrength = -8;
-        let maxPlatforms = 12, goldenRatio; 
-        let tilt = 0, isPlaying = false;
+        let maxPlatforms = 15; // Mehr Plattformen für Dichte
+        let tilt = 0, isPlaying = false, goldenRatio; 
+        
+        // Liste der verfügbaren Buchstaben (kleingeschrieben)
+        const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
         function init() {
             width = window.innerWidth;
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
-            
+
             // Berechne den Goldenen Schnitt für die vertikale Sprungmitte
             goldenRatio = height * 0.618; 
 
-            // Der Punkt startet am Goldenen Schnitt
-            player = { x: width / 2, y: goldenRatio, radius: 5, vx: 0, vy: 0 };
+            // Der Punkt startet als zufälliger kleingeschriebener Buchstabe
+            player = { 
+                x: width / 2, 
+                y: goldenRatio, 
+                char: alphabet[Math.floor(Math.random() * alphabet.length)], 
+                fontSize: 18, 
+                vx: 0, 
+                vy: 0 
+            };
             
             platforms = [];
-            // Das Start-Podest etwas tiefer als der Spieler
-            platforms.push({ x: width / 2 - 25, y: goldenRatio + 50, w: 50, h: 1 }); 
+            // Start-Podest, etwas tiefer
+            generatePlatform(goldenRatio + 50); 
             
             for(let i = 1; i < maxPlatforms; i++){
                 generatePlatform();
             }
         }
 
-        function generatePlatform() {
+        function generatePlatform(y = null) {
             let lastY = platforms.length > 0 ? platforms[platforms.length-1].y : height;
-            // Dichte Plattformen für flüssiges Gameplay
-            let newY = lastY - (height / 15); 
+            let newY = y ? y : lastY - (height / 18); // Dichte Plattformen
+            
+            // Variierende Länge und Graustufe
+            let platformWidth = Math.random() * 40 + 30; // 30px - 70px
+            let grayValue = Math.floor(Math.random() * 150) + 50; // Grautöne 50-200 (heller)
             
             platforms.push({
-                x: Math.random() * (width - 50),
+                x: Math.random() * (width - platformWidth),
                 y: newY,
-                w: 50,
-                h: 1
+                w: platformWidth,
+                h: 1, // Hauchdünne Linien
+                color: `rgb(${grayValue}, ${grayValue}, ${grayValue})`
             });
         }
 
@@ -118,7 +132,7 @@
             if(!isPlaying) return;
             ctx.clearRect(0, 0, width, height);
 
-            player.vx = tilt * 0.6; // Empfindlichkeit erhöht
+            player.vx = tilt * 0.6; // Empfindlichkeit
             player.vy += gravity;
             player.x += player.vx;
             player.y += player.vy;
@@ -134,12 +148,16 @@
                 platforms.forEach(p => p.y += diff); // Schiebe Plattformen nach unten
             }
 
-            // Zeichne Podeste
-            ctx.fillStyle = '#000';
+            // Zeichne Podeste (Dünne Linien, variierende Farben/Längen)
             platforms.forEach((p) => {
+                ctx.fillStyle = p.color; // Nutzung der spezifischen Graustufe
                 ctx.fillRect(p.x, p.y, p.w, p.h);
-                if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y + player.radius > p.y && player.y + player.radius < p.y + 10) {
+
+                // Kollision beim Runterfallen
+                if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y > p.y && player.y < p.y + 10) {
                     player.vy = jumpStrength;
+                    // Wechsel des Buchstabens bei Kollision
+                    player.char = alphabet[Math.floor(Math.random() * alphabet.length)];
                 }
             });
 
@@ -147,11 +165,11 @@
             platforms = platforms.filter(p => p.y < height);
             while(platforms.length < maxPlatforms) generatePlatform();
 
-            // Springender Punkt (SCHWARZ & KLEIN)
+            // Zeichne Spieler als Buchstabe
             ctx.fillStyle = '#000';
-            ctx.beginPath();
-            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.font = `${player.fontSize}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText(player.char, player.x, player.y);
 
             // Game Over Reset
             if (player.y > height + 100) init();
