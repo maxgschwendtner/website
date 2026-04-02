@@ -2,151 +2,128 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Max Gschwendtner</title>
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow-x: hidden;
+            font-family: "Inter", sans-serif;
             background-color: #fff;
-            color: #000;
-            overflow: hidden;
-            
-            /* Old School Windows Cursor (Pixel-Style SVG) */
-            cursor: url('data:image/svg+xml;utf8,<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M0 0V22L6 16L11 27L15 25L10 14H18L0 0Z" fill="white" stroke="black" stroke-width="2" stroke-linejoin="miter"/></svg>'), auto;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Fixierte Navigation */
+        /* UI Elemente */
         header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            padding: 30px 40px;
-            z-index: 1000;
-            pointer-events: none; 
+            position: fixed; top: 0; left: 0; padding: 30px 40px;
+            z-index: 100; pointer-events: none;
         }
-
-        h1 {
-            font-weight: 800;
-            font-size: 3.5rem;
-            margin: 0;
-            text-transform: uppercase;
-            letter-spacing: -0.04em;
-            line-height: 0.9;
-            pointer-events: auto;
+        h1 { 
+            font-weight: 800; font-size: 3.5rem; margin: 0;
+            text-transform: uppercase; letter-spacing: -0.04em; line-height: 0.9;
         }
-
         .mail-link {
-            position: fixed;
-            bottom: 30px;
-            right: 40px;
-            font-size: 0.9rem;
-            text-decoration: none;
-            color: #000;
-            font-weight: 500;
-            z-index: 1000;
-            letter-spacing: 0.05em;
-            /* Auch hier der Cursor beim Hover */
-            cursor: url('data:image/svg+xml;utf8,<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M0 0V22L6 16L11 27L15 25L10 14H18L0 0Z" fill="white" stroke="black" stroke-width="2" stroke-linejoin="miter"/></svg>'), pointer;
+            position: fixed; bottom: 30px; right: 40px;
+            font-size: 1rem; text-decoration: none; color: #000;
+            font-weight: 500; z-index: 100;
         }
 
-        .mail-link:hover {
-            opacity: 0.5;
-        }
-
-        /* Scroll-Bereich */
-        #scroll-container {
-            width: 100vw;
-            height: 100vh;
-            overflow: auto;
+        /* Das Spielfeld */
+        #game-container {
             position: relative;
-            scrollbar-width: none; 
-            -ms-overflow-style: none;
-        }
-        
-        #scroll-container::-webkit-scrollbar { 
-            display: none; 
+            width: 100%;
+            min-height: 15000px; /* Deine unendliche Länge */
+            background: white;
         }
 
-        #canvas {
-            width: 16000px; 
-            height: 16000px;
-            position: relative;
-            background-color: #ffffff;
-        }
-
-        /* Die winzigen schwarzen Punkte */
         .dot {
             position: absolute;
+            width: 12px; height: 12px;
             background-color: #000;
             border-radius: 50%;
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease;
         }
 
-        .dot.popped {
-            transform: scale(0);
-            opacity: 0;
-            pointer-events: none;
+        /* Der Spieler (Gelber Punkt) */
+        #player {
+            position: fixed; /* Bleibt im Sichtfeld */
+            width: 16px; height: 16px;
+            background-color: #FFD700; /* Gold/Gelb */
+            border-radius: 50%;
+            z-index: 50;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
         }
 
         @media (max-width: 600px) {
             h1 { font-size: 2.2rem; }
-            header { padding: 20px; }
-            .mail-link { bottom: 20px; right: 20px; }
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>MAX GSCHWENDTNER</h1>
-    </header>
-
+    <header><h1>MAX GSCHWENDTNER</h1></header>
     <a href="mailto:mail@maxgschwendtner.com" class="mail-link">mail@maxgschwendtner.com</a>
 
-    <div id="scroll-container">
-        <div id="canvas">
-            </div>
-    </div>
+    <div id="game-container">
+        <div id="player"></div>
+        </div>
 
     <script>
-        const canvas = document.getElementById('canvas');
-        const container = document.getElementById('scroll-container');
-
-        const numberOfDots = 180; // Leicht erhöht bei 16000px Fläche
-
-        function createDot() {
+        const player = document.getElementById('player');
+        const container = document.getElementById('game-container');
+        
+        let pX = window.innerWidth / 2;
+        let pY = 150; // Position im Viewport
+        let vX = 0;
+        let vY = 0;
+        let scrollY = 0;
+        const gravity = 0.25;
+        const jumpStrength = -10;
+        
+        // Plattformen generieren
+        const platforms = [];
+        for (let i = 0; i < 150; i++) {
             const dot = document.createElement('div');
             dot.className = 'dot';
-
-            const size = Math.random() * (5 - 2) + 2; // Sehr klein: 2px bis 5px
-            dot.style.width = `${size}px`;
-            dot.style.height = `${size}px`;
-
-            const maxX = canvas.offsetWidth - size;
-            const maxY = canvas.offsetHeight - size;
-            dot.style.left = `${Math.random() * maxX}px`;
-            dot.style.top = `${Math.random() * maxY}px`;
-
-            dot.addEventListener('mouseenter', () => {
-                dot.classList.add('popped');
-                setTimeout(() => dot.remove(), 250);
-            });
-
-            canvas.appendChild(dot);
+            const x = Math.random() * (window.innerWidth - 40) + 20;
+            const y = i * 150 + 200; 
+            dot.style.left = x + 'px';
+            dot.style.top = y + 'px';
+            container.appendChild(dot);
+            platforms.push({ x, y, el: dot });
         }
 
-        for (let i = 0; i < numberOfDots; i++) {
-            createDot();
-        }
+        // Steuerung
+        let moveLeft = false;
+        let moveRight = false;
 
-        window.addEventListener('load', () => {
-            container.scrollLeft = (canvas.offsetWidth - window.innerWidth) / 2;
-            container.scrollTop = (canvas.offsetHeight - window.innerHeight) / 2;
+        window.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft') moveLeft = true;
+            if (e.key === 'ArrowRight') moveRight = true;
         });
-    </script>
-</body>
-</html>
+        window.addEventListener('keyup', e => {
+            if (e.key === 'ArrowLeft') moveLeft = false;
+            if (e.key === 'ArrowRight') moveRight = false;
+        });
+
+        // Mobile Steuerung
+        window.addEventListener('touchstart', e => {
+            const touchX = e.touches[0].clientX;
+            if (touchX < window.innerWidth / 2) moveLeft = true;
+            else moveRight = true;
+        });
+        window.addEventListener('touchend', () => {
+            moveLeft = false;
+            moveRight = false;
+        });
+
+        function update() {
+            // Physik
+            if (moveLeft) vX -= 0.8;
+            if (moveRight) vX += 0.8;
+            vX *= 0.9; // Reibung
+            pX += vX;
+            
+            vY += gravity;
+            pY += vY;
+
+            // Screen Wrap (Links
