@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Max Gschwendtner - Jump</title>
+    <title>Max Gschwendtner</title>
     <style>
         body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: Helvetica, Arial, sans-serif; }
         canvas { display: block; }
@@ -31,12 +31,14 @@
         .footer { text-align: right; font-size: 11px; font-weight: 400; color: #000; pointer-events: auto; }
         .footer a { color: #000; text-decoration: none; }
 
-        /* Start-Button: Nur Outline, etwas dezenter */
+        /* Start-Button: Nur Text, keine Umrandung */
         #start-btn {
-            position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%);
-            padding: 8px 16px; background: transparent; color: #000;
-            border: 1px solid #000; cursor: pointer; pointer-events: auto;
-            font-size: 12px; font-weight: bold; letter-spacing: 1px;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: none; border: none; color: #000;
+            cursor: pointer; pointer-events: auto;
+            font-size: 14px; font-weight: bold; letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 20px;
         }
     </style>
 </head>
@@ -60,7 +62,7 @@
         const startBtn = document.getElementById('start-btn');
 
         let width, height, player, platforms = [], gravity = 0.3, jumpStrength = -8;
-        let maxPlatforms = 10; // Mehr Plattformen für geringere Abstände
+        let maxPlatforms = 12; 
         let tilt = 0, isPlaying = false;
 
         function init() {
@@ -69,11 +71,9 @@
             canvas.width = width;
             canvas.height = height;
 
-            // Der springende Punkt ist jetzt SCHWARZ
             player = { x: width / 2, y: height / 2, radius: 5, vx: 0, vy: 0 };
             
             platforms = [];
-            // Start-Podest direkt unter dem Spieler
             platforms.push({ x: width / 2 - 25, y: height / 2 + 40, w: 50, h: 1 }); 
             
             for(let i = 1; i < maxPlatforms; i++){
@@ -82,15 +82,14 @@
         }
 
         function generatePlatform() {
-            // Engere Abstände: height / 10 statt height / 6
             let lastY = platforms.length > 0 ? platforms[platforms.length-1].y : height;
-            let newY = lastY - (height / 10); 
+            let newY = lastY - (height / 12); // Noch engere Abstände für besseren Flow
             
             platforms.push({
                 x: Math.random() * (width - 50),
                 y: newY,
                 w: 50,
-                h: 1 // Hauchdünne Linien
+                h: 1
             });
         }
 
@@ -118,39 +117,32 @@
             player.x += player.vx;
             player.y += player.vy;
 
-            // Screen Wrap
             if (player.x < 0) player.x = width;
             if (player.x > width) player.x = 0;
 
-            // Kamera-Follow
             if (player.y < height / 2) {
                 let diff = height / 2 - player.y;
                 player.y = height / 2;
                 platforms.forEach(p => p.y += diff);
             }
 
-            // Zeichne Podeste (Dünne schwarze Linien)
             ctx.fillStyle = '#000';
             platforms.forEach((p) => {
                 ctx.fillRect(p.x, p.y, p.w, p.h);
-                // Kollisions-Logik
-                if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y + player.radius > p.y && player.y + player.radius < p.y + 10) {
+                if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y + player.radius > p.y && player.y + player.radius < p.y + 8) {
                     player.vy = jumpStrength;
                 }
             });
 
-            // Podeste recyceln
             platforms = platforms.filter(p => p.y < height);
             while(platforms.length < maxPlatforms) generatePlatform();
 
-            // Springender Punkt (SCHWARZ & KLEIN)
             ctx.fillStyle = '#000';
             ctx.beginPath();
             ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Game Over Reset
-            if (player.y > height + 100) init();
+            if (player.y > height + 50) init();
             requestAnimationFrame(animate);
         }
 
