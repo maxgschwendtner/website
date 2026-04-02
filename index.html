@@ -13,38 +13,30 @@
             position: absolute; width: 100%; top: 0; left: 0; pointer-events: none;
             display: flex; flex-direction: column; justify-content: space-between; height: 100vh;
             padding: 30px; box-sizing: border-box;
+            z-index: 10;
         }
 
-        /* Name oben links: BOLD wie im Screenshot */
+        /* Name oben links: BOLD */
         .header { 
             text-align: left; 
             font-size: 32px; 
-            font-weight: 900; /* Extra Fett */
+            font-weight: 900; 
             line-height: 0.9; 
             letter-spacing: -1px; 
             color: #000; 
             text-transform: uppercase;
         }
 
-        /* Kleiner schwarzer Punkt unter dem Namen */
-        .dot {
-            width: 6px;
-            height: 6px;
-            background-color: #000;
-            border-radius: 50%;
-            margin-top: 15px;
-        }
-
         /* Mail unten rechts */
-        .footer { text-align: right; font-size: 12px; font-weight: 400; color: #000; pointer-events: auto; }
+        .footer { text-align: right; font-size: 11px; font-weight: 400; color: #000; pointer-events: auto; }
         .footer a { color: #000; text-decoration: none; }
 
-        /* Start-Button: Nur Outline */
+        /* Start-Button: Nur Outline, etwas dezenter */
         #start-btn {
-            position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%);
-            padding: 10px 20px; background: transparent; color: #000;
+            position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%);
+            padding: 8px 16px; background: transparent; color: #000;
             border: 1px solid #000; cursor: pointer; pointer-events: auto;
-            font-size: 14px; font-weight: bold;
+            font-size: 12px; font-weight: bold; letter-spacing: 1px;
         }
     </style>
 </head>
@@ -53,13 +45,13 @@
     <div id="ui">
         <div class="header">
             MAX<br>GSCHWENDTNER
-            <div class="dot"></div> </div>
+        </div>
         <div class="footer">
             <a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a>
         </div>
     </div>
 
-    <button id="start-btn">START GAME</button>
+    <button id="start-btn">START</button>
     <canvas id="gameCanvas"></canvas>
 
     <script>
@@ -67,7 +59,8 @@
         const ctx = canvas.getContext('2d');
         const startBtn = document.getElementById('start-btn');
 
-        let width, height, player, platforms = [], gravity = 0.35, jumpStrength = -9, maxPlatforms = 7;
+        let width, height, player, platforms = [], gravity = 0.3, jumpStrength = -8;
+        let maxPlatforms = 10; // Mehr Plattformen für geringere Abstände
         let tilt = 0, isPlaying = false;
 
         function init() {
@@ -76,24 +69,28 @@
             canvas.width = width;
             canvas.height = height;
 
-            player = { x: width / 2, y: height / 2, radius: 8, vx: 0, vy: 0 };
+            // Der springende Punkt ist jetzt SCHWARZ
+            player = { x: width / 2, y: height / 2, radius: 5, vx: 0, vy: 0 };
             
             platforms = [];
-            // Erste Plattform direkt unter dem Spieler
-            platforms.push({ x: width / 2 - 30, y: height / 2 + 50, w: 60, h: 1 }); 
+            // Start-Podest direkt unter dem Spieler
+            platforms.push({ x: width / 2 - 25, y: height / 2 + 40, w: 50, h: 1 }); 
             
             for(let i = 1; i < maxPlatforms; i++){
-                generatePlatform(i);
+                generatePlatform();
             }
         }
 
-        function generatePlatform(index) {
-            let y = platforms.length > 0 ? platforms[platforms.length-1].y - (height / 6) : height * 0.8;
+        function generatePlatform() {
+            // Engere Abstände: height / 10 statt height / 6
+            let lastY = platforms.length > 0 ? platforms[platforms.length-1].y : height;
+            let newY = lastY - (height / 10); 
+            
             platforms.push({
-                x: Math.random() * (width - 70),
-                y: y,
-                w: 70,
-                h: 1 // Hauchdünne Linie (1px)
+                x: Math.random() * (width - 50),
+                y: newY,
+                w: 50,
+                h: 1 // Hauchdünne Linien
             });
         }
 
@@ -109,47 +106,52 @@
             }
             startBtn.style.display = 'none';
             isPlaying = true;
-            update();
+            animate();
         });
 
-        function update() {
+        function animate() {
             if(!isPlaying) return;
             ctx.clearRect(0, 0, width, height);
 
-            player.vx = tilt * 0.6;
+            player.vx = tilt * 0.5;
             player.vy += gravity;
             player.x += player.vx;
             player.y += player.vy;
 
+            // Screen Wrap
             if (player.x < 0) player.x = width;
             if (player.x > width) player.x = 0;
 
+            // Kamera-Follow
             if (player.y < height / 2) {
                 let diff = height / 2 - player.y;
                 player.y = height / 2;
                 platforms.forEach(p => p.y += diff);
             }
 
-            // Zeichne Podeste (1px dünn)
+            // Zeichne Podeste (Dünne schwarze Linien)
             ctx.fillStyle = '#000';
             platforms.forEach((p) => {
                 ctx.fillRect(p.x, p.y, p.w, p.h);
+                // Kollisions-Logik
                 if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y + player.radius > p.y && player.y + player.radius < p.y + 10) {
                     player.vy = jumpStrength;
                 }
             });
 
+            // Podeste recyceln
             platforms = platforms.filter(p => p.y < height);
             while(platforms.length < maxPlatforms) generatePlatform();
 
-            // Gelber Punkt (Spieler)
-            ctx.fillStyle = '#FFD700';
+            // Springender Punkt (SCHWARZ & KLEIN)
+            ctx.fillStyle = '#000';
             ctx.beginPath();
             ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
             ctx.fill();
 
-            if (player.y > height) init();
-            requestAnimationFrame(update);
+            // Game Over Reset
+            if (player.y > height + 100) init();
+            requestAnimationFrame(animate);
         }
 
         window.addEventListener('resize', init);
