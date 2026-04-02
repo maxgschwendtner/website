@@ -5,58 +5,139 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Max Gschwendtner</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #fff; }
-        header { position: fixed; top: 0; left: 0; padding: 30px 40px; pointer-events: none; z-index: 100; }
-        h1 { font-weight: 800; font-size: 3.5rem; margin: 0; text-transform: uppercase; letter-spacing: -0.04em; }
-        .mail-link { position: fixed; bottom: 30px; right: 40px; font-size: 1rem; text-decoration: none; color: #000; font-weight: 500; z-index: 100; }
-        #player { position: absolute; width: 18px; height: 18px; background-color: #FFD700; border-radius: 50%; z-index: 50; transform: translate(-50%, -50%); }
-        .dot { position: absolute; width: 10px; height: 10px; background-color: #000; border-radius: 50%; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: Helvetica, Arial, sans-serif; }
+        canvas { display: block; touch-action: none; }
+
+        #ui {
+            position: absolute; width: 100%; top: 0; left: 0; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between; height: 100vh;
+            padding: 30px; box-sizing: border-box; z-index: 10;
+        }
+
+        .header { 
+            text-align: left; font-size: 32px; font-weight: 900; 
+            line-height: 0.9; letter-spacing: -1px; color: #000; text-transform: uppercase;
+        }
+
+        .footer { text-align: right; font-size: 11px; font-weight: 400; color: #000; pointer-events: auto; }
+        .footer a { color: #000; text-decoration: none; }
+
+        #start-btn {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: none; border: none; color: #000; cursor: pointer; pointer-events: auto;
+            font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
-    <header><h1>MAX GSCHWENDTNER</h1></header>
-    <a href="mailto:mail@maxgschwendtner.com" class="mail-link">mail@maxgschwendtner.com</a>
-    <div id="player"></div>
+
+    <div id="ui">
+        <div class="header">MAX<br>GSCHWENDTNER</div>
+        <div class="footer"><a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a></div>
+    </div>
+
+    <button id="start-btn">UNDER CONSTRUCTION</button>
+    <canvas id="gameCanvas"></canvas>
+
     <script>
-        const playerEl = document.getElementById('player');
-        let pX = window.innerWidth/2, pY = window.innerHeight/2, vX = 0, vY = 0;
-        const gravity = 0.3, jumpStrength = -11, speed = 0.8;
-        let platforms = [], moveLeft = false, moveRight = false;
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('start-btn');
 
-        function createPlatform(yPos) {
-            const el = document.createElement('div'); el.className = 'dot';
-            const x = Math.random() * (window.innerWidth - 60) + 30;
-            el.style.left = x + 'px'; el.style.top = yPos + 'px';
-            document.body.appendChild(el);
-            return { x, y: yPos, el };
+        let width, height, player, platforms = [], gravity = 0.25, jumpStrength = -8;
+        let tilt = 0, isPlaying = false, goldenRatio; 
+        const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
+
+        function init() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            goldenRatio = height * 0.618; 
+
+            player = { 
+                x: width / 2, 
+                y: height * 0.2, // Startet weiter oben zum Runterfallen
+                char: alphabet[Math.floor(Math.random() * alphabet.length)], 
+                vx: 0, vy: 0 
+            };
+            platforms = [];
         }
-        for (let i = 0; i < 8; i++) platforms.push(createPlatform(window.innerHeight + (i * 150)));
 
-        window.addEventListener('keydown', e => { if(e.key==='ArrowLeft') moveLeft=true; if(e.key==='ArrowRight') moveRight=true; });
-        window.addEventListener('keyup', e => { if(e.key==='ArrowLeft') moveLeft=false; if(e.key==='ArrowRight') moveRight=false; });
-        window.addEventListener('touchstart', e => { const tX = e.touches[0].clientX; if(tX < window.innerWidth/2) moveLeft=true; else moveRight=true; });
-        window.addEventListener('touchend', () => { moveLeft=false; moveRight=false; });
+        // Plattformen durch Tippen generieren
+        window.addEventListener('touchstart', (e) => {
+            if(!isPlaying) return;
+            const touch = e.touches[0];
+            const newX = touch.clientX - 25;
+            const newY = touch.clientY;
 
-        function gameLoop() {
-            if(moveLeft) vX -= speed; if(moveRight) vX += speed;
-            vX *= 0.85; pX += vX; vY += gravity; pY += vY;
-            if(pX < 0) pX = window.innerWidth; if(pX > window.innerWidth) pX = 0;
-            if(pY < window.innerHeight/2) {
-                let diff = window.innerHeight/2 - pY; pY = window.innerHeight/2;
-                platforms.forEach(p => { p.y += diff; p.el.style.top = p.y + 'px'; });
+            // Check: Nicht direkt übereinander (Mindestabstand 40px vertikal)
+            const overlap = platforms.some(p => Math.abs(p.y - newY) < 40);
+            
+            if (!overlap) {
+                platforms.push({ x: newX, y: newY, w: 50, h: 0.5 }); // Extrem dünne Linie
             }
-            if(platforms[0].y > window.innerHeight + 100) {
-                const old = platforms.shift(); old.el.remove();
-                platforms.push(createPlatform(platforms[platforms.length-1].y - 180));
+        });
+
+        function handleOrientation(event) { tilt = event.gamma; }
+
+        startBtn.addEventListener('click', () => {
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(res => {
+                    if (res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
+                });
+            } else {
+                window.addEventListener('deviceorientation', handleOrientation);
             }
-            if(vY > 0) platforms.forEach(p => {
-                if(Math.hypot(pX-p.x, pY-p.y) < 25) vY = jumpStrength;
+            startBtn.style.display = 'none';
+            isPlaying = true;
+            animate();
+        });
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            player.vx = tilt * 0.5;
+            player.vy += gravity;
+            player.x += player.vx;
+            player.y += player.vy;
+
+            if (player.x < 0) player.x = width;
+            if (player.x > width) player.x = 0;
+
+            // Kamera-Scroll (nur wenn Spieler über Golden Ratio)
+            if (player.y < goldenRatio) {
+                let diff = goldenRatio - player.y;
+                player.y = goldenRatio;
+                platforms.forEach(p => p.y += diff);
+            }
+
+            // Zeichne Podeste (Schwarz & Hauchdünn)
+            ctx.fillStyle = '#000';
+            platforms.forEach((p) => {
+                ctx.fillRect(p.x, p.y, p.w, p.h);
+                // Kollision
+                if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y > p.y && player.y < p.y + 10) {
+                    player.vy = jumpStrength;
+                    player.char = alphabet[Math.floor(Math.random() * alphabet.length)];
+                }
             });
-            if(pY > window.innerHeight + 50) { pX=window.innerWidth/2; pY=window.innerHeight/2; vY=0; }
-            playerEl.style.left = pX + 'px'; playerEl.style.top = pY + 'px';
-            requestAnimationFrame(gameLoop);
+
+            // Aufräumen
+            platforms = platforms.filter(p => p.y < height);
+
+            // Buchstabe zeichnen
+            ctx.fillStyle = '#000';
+            ctx.font = `900 18px Helvetica`;
+            ctx.textAlign = 'center';
+            ctx.fillText(player.char, player.x, player.y);
+
+            if (player.y > height + 100) init();
+            requestAnimationFrame(animate);
         }
-        gameLoop();
+
+        window.addEventListener('resize', init);
+        init();
     </script>
 </body>
 </html>
