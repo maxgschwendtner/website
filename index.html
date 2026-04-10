@@ -53,7 +53,8 @@
         const startBtn = document.getElementById('start-btn');
         const scoreDisplay = document.getElementById('score');
 
-        let width, height, player, platforms = [], enemies = [], gravity = 0.25, jumpStrength = -8;
+        // PHYSIK-WERTE ERHÖHT FÜR MEHR SPEED
+        let width, height, player, platforms = [], enemies = [], gravity = 0.45, jumpStrength = -11;
         let tilt = 0, isPlaying = false, goldenRatio, totalHeight = 0; 
         const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -89,7 +90,7 @@
                     window.addEventListener('deviceorientation', (e) => tilt = e.gamma);
                 }
             } else {
-                pcData.score = 0; pcData.speed = 4;
+                pcData.score = 0; pcData.speed = 7; // Startgeschwindigkeit am PC erhöht
                 scoreDisplay.innerText = "0";
                 scoreDisplay.style.display = 'block';
                 player = { x: width * 0.15, y: height * 0.75, char: alphabet[0], size: 24, vy: 0, isJumping: false };
@@ -98,10 +99,10 @@
             animate();
         });
 
-        let pcData = { score: 0, speed: 4, nextObstacle: 0 };
+        let pcData = { score: 0, speed: 7, nextObstacle: 0 };
         function handlePcInput(e) {
             if (e.code === 'Space' && player && !player.isJumping) {
-                player.vy = jumpStrength * 1.3;
+                player.vy = jumpStrength * 1.2;
                 player.isJumping = true;
             }
         }
@@ -111,114 +112,54 @@
             ctx.clearRect(0, 0, width, height);
 
             if (isMobile) {
-                player.vx = tilt * 0.5;
+                // Direktere Steuerung
+                player.vx = tilt * 0.8;
                 player.vy += gravity;
                 player.x += player.vx;
                 player.y += player.vy;
+                
                 if (player.x < 0) player.x = width; if (player.x > width) player.x = 0;
 
                 if (player.y < goldenRatio) {
                     let diff = goldenRatio - player.y;
                     player.y = goldenRatio;
-                    totalHeight += diff; // Tracke die erreichte Höhe
+                    totalHeight += diff;
                     platforms.forEach(p => p.y += diff);
                     enemies.forEach(e => e.y += diff);
                 }
 
-                // Gegner-Logik (Mobil)
-                // Spawne Gegner ab einer Höhe von 1000px
-                if (totalHeight > 1000 && Math.random() < 0.01) {
+                // Gegner spawnen früher und schneller
+                if (totalHeight > 500 && Math.random() < 0.02) {
                     enemies.push({
                         x: Math.random() < 0.5 ? -20 : width + 20,
-                        y: Math.random() * (height / 2),
-                        vx: (Math.random() * 2 + 1) * (Math.random() < 0.5 ? 1 : -1),
+                        y: Math.random() * (height * 0.8),
+                        vx: (Math.random() * 4 + 2) * (Math.random() < 0.5 ? 1 : -1),
                         radius: 4
                     });
                 }
 
                 ctx.fillStyle = '#000';
-                // Zeichne & Kollision Plattformen
                 platforms.forEach(p => {
                     ctx.fillRect(p.x, p.y, p.w, p.h);
-                    if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y > p.y && player.y < p.y + 10) {
+                    if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y > p.y && player.y < p.y + 15) {
                         player.vy = jumpStrength;
                         player.char = alphabet[Math.floor(Math.random() * alphabet.length)];
                     }
                 });
 
-                // Zeichne & Kollision Gegner
-                enemies.forEach((e, index) => {
+                enemies.forEach(e => {
                     e.x += e.vx;
-                    ctx.beginPath();
-                    ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    // Einfache Kreiskollision
-                    let dx = player.x - e.x;
-                    let dy = player.y - e.y;
-                    let distance = Math.sqrt(dx * dx + dy * dy);
-                    if (distance < player.size / 2 + e.radius) gameOver();
+                    ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2); ctx.fill();
+                    let dx = player.x - e.x; let dy = player.y - e.y;
+                    if (Math.sqrt(dx*dx + dy*dy) < 12) gameOver();
                 });
 
                 platforms = platforms.filter(p => p.y < height);
-                enemies = enemies.filter(e => e.y < height && e.x > -50 && e.x < width + 50);
+                enemies = enemies.filter(e => e.x > -50 && e.x < width + 50);
                 if (player.y > height + 50) gameOver();
 
             } else {
-                // PC-Logik (Dino Runner bleibt gleich)
-                player.vy += gravity * 1.5; player.y += player.vy;
+                // PC Runner Speed-Up
+                player.vy += gravity * 1.8; player.y += player.vy;
                 const ground = height * 0.75;
-                if (player.y > ground) { player.y = ground; player.vy = 0; player.isJumping = false; }
-                
-                pcData.nextObstacle--;
-                if (pcData.nextObstacle <= 0) {
-                    platforms.push({ x: width, y: ground + player.size/2, w: 15, h: 1, passed: false });
-                    pcData.nextObstacle = Math.random() * 150 + 80;
-                }
-                ctx.beginPath(); ctx.moveTo(0, ground + player.size/2); ctx.lineTo(width, ground + player.size/2);
-                ctx.lineWidth = 0.5; ctx.strokeStyle = '#000'; ctx.stroke();
-                
-                platforms.forEach(p => {
-                    p.x -= pcData.speed;
-                    ctx.fillStyle = '#000'; ctx.fillRect(p.x, p.y - 1, p.w, 1);
-                    if (player.x + 10 > p.x && player.x - 10 < p.x + p.w && player.y + 10 > p.y - 5) gameOver();
-                    if (p.x + p.w < player.x && !p.passed) {
-                        p.passed = true; pcData.score++; scoreDisplay.innerText = pcData.score;
-                        player.char = alphabet[pcData.score % alphabet.length];
-                        pcData.speed += 0.05;
-                    }
-                });
-                platforms = platforms.filter(p => p.x > -20);
-            }
-
-            if (player) {
-                ctx.fillStyle = '#000';
-                ctx.font = `900 ${player.size}px 'Helvetica Neue', Helvetica`;
-                ctx.textAlign = 'center';
-                ctx.fillText(player.char, player.x, player.y);
-            }
-            requestAnimationFrame(animate);
-        }
-
-        function gameOver() {
-            isPlaying = false;
-            startBtn.innerText = "UNDER CONSTRUCTION";
-            startBtn.style.display = 'block';
-            scoreDisplay.style.display = 'none';
-            window.removeEventListener('keydown', handlePcInput);
-            init();
-        }
-
-        window.addEventListener('touchstart', (e) => {
-            if(!isPlaying || !isMobile) return;
-            const y = e.touches[0].clientY;
-            if (!platforms.some(p => Math.abs(p.y - y) < 40)) {
-                platforms.push({ x: e.touches[0].clientX - 25, y: y, w: 50, h: 0.5 });
-            }
-        });
-
-        window.addEventListener('resize', init);
-        init();
-    </script>
-</body>
-</html>
+                if (player.y > ground) { player.y = ground
