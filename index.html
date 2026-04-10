@@ -6,7 +6,7 @@
     <title>Max Gschwendtner</title>
     <style>
         body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-        canvas { display: block; touch-action: none; }
+        canvas { display: block; touch-action: none; width: 100%; height: 100%; }
 
         #ui {
             position: absolute; width: 100%; top: 0; left: 0; pointer-events: none;
@@ -28,8 +28,6 @@
             font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
             padding: 20px; z-index: 11;
         }
-
-        @media (min-width: 769px) { #start-btn { cursor: default; } }
     </style>
 </head>
 <body>
@@ -47,16 +45,21 @@
         const ctx = canvas.getContext('2d');
         const startBtn = document.getElementById('start-btn');
 
-        let width, height, player, platforms = [], enemies = [], gravity = 0.3, jumpStrength = -9;
+        let width, height, dpr, player, platforms = [], enemies = [], gravity = 0.3, jumpStrength = -9;
         let tilt = 0, isPlaying = false, goldenRatio, totalHeight = 0; 
         const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         function init() {
+            dpr = window.devicePixelRatio || 1;
             width = window.innerWidth;
             height = window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
+            
+            // High-End Look: Canvas auf Retina-Auflösung skalieren
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+
             ctx.textBaseline = 'middle';
             platforms = [];
             enemies = [];
@@ -72,7 +75,8 @@
             player = { 
                 x: width / 2, y: height * 0.2,
                 char: alphabet[Math.floor(Math.random() * alphabet.length)], 
-                size: 20, vx: 0, vy: 0 
+                size: 20, vx: 0, vy: 0,
+                trail: [] // Für Motion Trails
             };
 
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -85,9 +89,31 @@
             animate();
         });
 
+        function drawGrid() {
+            ctx.fillStyle = "rgba(0,0,0,0.05)";
+            const gridSize = 40;
+            const offset = totalHeight % gridSize;
+            for (let x = 0; x <= width; x += gridSize) {
+                for (let y = offset; y <= height; y += gridSize) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function drawStatusBar() {
+            const barWidth = Math.min(width * (totalHeight / 10000), width);
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, height - 2, barWidth, 2);
+        }
+
         function animate() {
             if(!isPlaying) return;
             ctx.clearRect(0, 0, width, height);
+
+            drawGrid();
+            drawStatusBar();
 
             player.vx = tilt * 0.75; 
             player.vy += gravity;
@@ -104,27 +130,79 @@
                 enemies.forEach(e => e.y += diff);
             }
 
-            // GEGNER-LOGIK MIT ERHÖHTER GESCHWINDIGKEIT
+            // Motion Trail Logik
+            player.trail.unshift({x: player.x, y: player.y});
+            if (player.trail.length > 8) player.trail.pop();
+
+            // Trail zeichnen
+            player.trail.forEach((pos, i) => {
+                ctx.fillStyle = `rgba(0,0,0,${0.15 - (i * 0.02)})`;
+                ctx.font = `900 ${player.size}px 'Helvetica Neue'`;
+                ctx.fillText(player.char, pos.x, pos.y);
+            });
+
+            // Gegner Spawn
             if (totalHeight > 600 && Math.random() < 0.02) {
                 enemies.push({
                     x: Math.random() < 0.5 ? -25 : width + 25,
                     y: Math.random() * (height * 0.75),
-                    // Geschwindigkeit auf 2.0 bis 4.0 erhöht
                     vx: (Math.random() * 2 + 2) * (Math.random() < 0.5 ? 1 : -1), 
                     radius: 4.5
                 });
             }
 
+            // Plattformen (Ultra-thin Lines)
             ctx.fillStyle = '#000';
             platforms.forEach(p => {
-                ctx.fillRect(p.x, p.y, p.w, p.h);
+                ctx.fillRect(p.x, p.y, p.w, 0.5); // 0.5px Linienstärke
                 if (player.vy > 0 && player.x > p.x - 5 && player.x < p.x + p.w + 5 && player.y > p.y && player.y < p.y + 15) {
                     player.vy = jumpStrength;
                     player.char = alphabet[Math.floor(Math.random() * alphabet.length)];
                 }
             });
 
+            // Gegner
             enemies.forEach(e => {
                 e.x += e.vx;
-                ctx.beginPath();
-                ctx.
+                ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2); ctx.fill();
+                let dx = player.x - e.x; let dy = player.y - e.y;
+                if (Math.sqrt(dx*dx + dy*dy) < 15) gameOver();
+            });
+
+            platforms = platforms.filter(p => p.y < height);
+            enemies = enemies.filter(e => e.x > -60 && e.x < width + 60 && e.y < height);
+
+            // Haupt-Buchstabe
+            ctx.fillStyle = '#000';
+            ctx.font = `900 ${player.size}px 'Helvetica Neue'`;
+            ctx.textAlign = 'center';
+            ctx.fillText(player.char, player.x, player.y);
+
+            // Koordinaten (Micro-Typo)
+            ctx.font = "400 8px monospace";
+            ctx.fillStyle = "rgba(0,0,0,0.4)";
+            ctx.fillText(`X:${Math.round(player.x)} Y:${Math.round(totalHeight)}`, player.x, player.y + 20);
+
+            if (player.y > height + 50) gameOver();
+            else requestAnimationFrame(animate);
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            startBtn.style.display = 'block';
+            init();
+        }
+
+        window.addEventListener('touchstart', (e) => {
+            if(!isPlaying || !isMobile) return;
+            const y = e.touches[0].clientY;
+            if (!platforms.some(p => Math.abs(p.y - y) < 35)) {
+                platforms.push({ x: e.touches[0].clientX - 25, y: y, w: 50, h: 0.5 });
+            }
+        });
+
+        window.addEventListener('resize', init);
+        init();
+    </script>
+</body>
+</html>
