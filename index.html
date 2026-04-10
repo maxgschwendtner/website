@@ -12,7 +12,7 @@
             touch-action: none; 
             width: 100%; 
             height: 100%; 
-            cursor: default; /* Cursor wieder sichtbar */
+            cursor: default;
         }
 
         #ui {
@@ -37,12 +37,24 @@
             .header { flex-direction: row; gap: 12px; }
         }
 
-        .footer { text-align: right; font-size: 11px; font-weight: 400; color: #000; pointer-events: auto; }
-        .footer a { color: #000; text-decoration: none; }
+        /* Mail unten rechts in Blau und größer */
+        .footer { 
+            text-align: right; 
+            font-size: 14px; /* Vorher 11px */
+            font-weight: 500; 
+            pointer-events: auto; 
+        }
+        .footer a { 
+            color: #0000FF; /* Reines Blau */
+            text-decoration: none; 
+        }
 
+        /* Under Construction Button in Rot */
         #start-btn {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: none; border: none; color: #000; cursor: pointer; pointer-events: auto;
+            background: none; border: none; 
+            color: #FF0000; /* Reines Rot */
+            cursor: pointer; pointer-events: auto;
             font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
             padding: 20px; z-index: 11;
             white-space: nowrap;
@@ -72,7 +84,6 @@
         let width, height, dpr, player, platforms = [], enemies = [], gravity = 0.3, jumpStrength = -9;
         let tilt = 0, isPlaying = false, goldenRatio, totalHeight = 0; 
         
-        // Motion-Variablen für die Maus
         let targetX = -100, targetY = -100;
         let currentX = -100, currentY = -100;
         
@@ -94,10 +105,7 @@
         }
 
         window.addEventListener('mousemove', (e) => {
-            if (!isMobile) { 
-                targetX = e.clientX; 
-                targetY = e.clientY; 
-            }
+            if (!isMobile) { targetX = e.clientX; targetY = e.clientY; }
         });
 
         startBtn.addEventListener('click', () => {
@@ -134,19 +142,15 @@
             ctx.font = "400 11px monospace";
             ctx.fillStyle = "rgba(0,0,0,0.6)";
             ctx.textAlign = 'center';
-            // Der Text klebt nicht an der Maus, sondern schwebt leicht versetzt daneben
             ctx.fillText(`X:${Math.round(x)} Y:${Math.round(labelY)}`, x, y + 25);
         }
 
         function renderStaticWeb() {
             if (isPlaying || isMobile) return;
             ctx.clearRect(0, 0, width, height);
-            
-            // Motion Smoothing (Linear Interpolation)
-            let lerpFactor = 0.15; // Je niedriger, desto mehr "Motion" / Verzögerung
+            let lerpFactor = 0.15;
             currentX += (targetX - currentX) * lerpFactor;
             currentY += (targetY - currentY) * lerpFactor;
-
             drawGrid(0);
             drawCoords(currentX, currentY, currentY);
             requestAnimationFrame(renderStaticWeb);
@@ -202,7 +206,6 @@
 
             platforms = platforms.filter(p => p.y < height);
             enemies = enemies.filter(e => e.x > -60 && e.x < width + 60 && e.y < height);
-
             drawCoords(player.x, player.y, totalHeight);
 
             if (player.y > height + 100) resetToUnderConstruction();
