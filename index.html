@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Max Gschwendtner</title>
     <style>
-        /* Gemeinsame Stile */
-        body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
-        canvas { display: block; touch-action: none; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: Helvetica, Arial, sans-serif; }
+        canvas { display: block; touch-action: none; cursor: crosshair; /* Zeigt ein Fadenkreuz für besseres Zielen auf PC */ }
 
         #ui {
             position: absolute; width: 100%; top: 0; left: 0; pointer-events: none;
@@ -17,7 +16,7 @@
 
         .header { 
             text-align: left; font-size: 32px; font-weight: 900; 
-            line-height: 0.9; letter-spacing: -1.5px; color: #000; text-transform: uppercase;
+            line-height: 0.9; letter-spacing: -1px; color: #000; text-transform: uppercase;
         }
 
         .footer { text-align: right; font-size: 11px; font-weight: 400; color: #000; pointer-events: auto; }
@@ -27,15 +26,6 @@
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: none; border: none; color: #000; cursor: pointer; pointer-events: auto;
             font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
-            padding: 20px; z-index: 11;
-        }
-
-        /* Spezifisch für PC-Spiel */
-        #score {
-            position: absolute; top: 30px; right: 30px;
-            font-size: 20px; font-weight: 900; color: #000;
-            display: none; /* Erst beim Start anzeigen */
-            z-index: 12;
         }
     </style>
 </head>
@@ -46,7 +36,6 @@
         <div class="footer"><a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a></div>
     </div>
 
-    <div id="score">0</div>
     <button id="start-btn">UNDER CONSTRUCTION</button>
     <canvas id="gameCanvas"></canvas>
 
@@ -54,188 +43,94 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const startBtn = document.getElementById('start-btn');
-        const scoreDisplay = document.getElementById('score');
 
         let width, height, player, platforms = [], gravity = 0.25, jumpStrength = -8;
         let tilt = 0, isPlaying = false, goldenRatio; 
         const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
         
-        // Erkennung ob PC oder Mobil
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // Neue Variablen für die Maussteuerung
+        let mouseX = 0;
+        let useMouse = true; // Standardmäßig auf Maus setzen
 
-        // --- GEMEINSAME INITALISIERUNG ---
         function init() {
             width = window.innerWidth;
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
-            ctx.textBaseline = 'middle'; // Wichtig für präzise Buchstaben-Kollision
+            goldenRatio = height * 0.618; 
+            mouseX = width / 2;
 
-            if (isMobile) {
-                initMobileGame();
-            } else {
-                initPcGame();
+            player = { 
+                x: width / 2, 
+                y: height * 0.2,
+                char: alphabet[Math.floor(Math.random() * alphabet.length)], 
+                vx: 0, vy: 0 
+            };
+            platforms = [];
+        }
+
+        // Hilfsfunktion zum Erstellen von Plattformen (wird für Klick und Touch genutzt)
+        function createPlatform(x, y) {
+            if(!isPlaying) return;
+            const newX = x - 25;
+            const newY = y;
+
+            const overlap = platforms.some(p => Math.abs(p.y - newY) < 40);
+            
+            if (!overlap) {
+                platforms.push({ x: newX, y: newY, w: 50, h: 0.5 }); 
             }
         }
 
-        // --- START-LOGIK ---
+        // --- STEUERUNG: TOUCH & KIPPEN (Smartphone) ---
+        window.addEventListener('touchstart', (e) => {
+            useMouse = false; // Umschalten auf Touch/Tilt-Modus
+            createPlatform(e.touches[0].clientX, e.touches[0].clientY);
+        });
+
+        function handleOrientation(event) { 
+            if (event.gamma !== null) {
+                tilt = event.gamma; 
+                useMouse = false; 
+            }
+        }
+
+        // --- STEUERUNG: MAUS (PC) ---
+        window.addEventListener('mousedown', (e) => {
+            useMouse = true;
+            createPlatform(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            useMouse = true;
+            mouseX = e.clientX;
+        });
+
+        // --- START-BUTTON ---
         startBtn.addEventListener('click', () => {
-            if (isMobile) {
-                // Berechtigungen für Neigungssensor (iOS)
-                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                    DeviceOrientationEvent.requestPermission().then(res => {
-                        if (res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
-                    });
-                } else {
-                    window.addEventListener('deviceorientation', handleOrientation);
-                }
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(res => {
+                    if (res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
+                });
             } else {
-                // PC-Steuerung aktivieren
-                window.addEventListener('keydown', handlePcInput);
-                scoreDisplay.style.display = 'block';
+                window.addEventListener('deviceorientation', handleOrientation);
             }
             startBtn.style.display = 'none';
             isPlaying = true;
             animate();
         });
 
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
 
-        // =========================================================
-        // === MODUS 1: PC GAME (Dino-Runner Klon mit Buchstaben) ===
-        // =========================================================
-
-        let pcData = { score: 0, speed: 5, groundY: 0, nextObstacle: 0 };
-
-        function initPcGame() {
-            pcData.groundY = height * 0.75; // Bodenlinie
-            pcData.score = 0;
-            pcData.speed = 4;
-            scoreDisplay.innerText = "0";
-            
-            player = { 
-                x: width * 0.15, // Startet links
-                y: pcData.groundY, 
-                char: alphabet[0], 
-                size: 24, 
-                vy: 0, 
-                isJumping: false 
-            };
-            platforms = []; // Hier sind es die Hürden
-            pcData.nextObstacle = 100; // Wann die erste Hürde kommt
-        }
-
-        function handlePcInput(e) {
-            if (!isPlaying) return;
-            if (e.code === 'Space' && !player.isJumping) {
-                player.vy = jumpStrength * 1.3; // Etwas höherer Sprung für Runner
-                player.isJumping = true;
-            }
-        }
-
-        function animatePc() {
-            // Physik
-            player.vy += gravity * 1.5; // Schnellere Schwerkraft
-            player.y += player.vy;
-
-            // Boden-Kollision
-            if (player.y > pcData.groundY) {
-                player.y = pcData.groundY;
-                player.vy = 0;
-                player.isJumping = false;
+            // Bewegung: Entweder Maus oder Neigungssensor
+            if (useMouse) {
+                // Der Buchstabe folgt der Maus weich
+                player.vx = (mouseX - player.x) * 0.15;
+            } else {
+                player.vx = tilt * 0.5;
             }
 
-            // Hürden generieren
-            pcData.nextObstacle--;
-            if (pcData.nextObstacle <= 0) {
-                platforms.push({ 
-                    x: width, 
-                    y: pcData.groundY + 2, // Leicht unter der Bodenlinie
-                    w: 15, 
-                    h: 1, // Dünne Linie
-                    passed: false // Zum Score-Zählen
-                });
-                // Zufälliger Abstand zur nächsten Hürde
-                pcData.nextObstacle = Math.random() * 150 + 80; 
-                // Geschwindigkeit leicht erhöhen
-                if (pcData.speed < 12) pcData.speed += 0.05;
-            }
-
-            // Bodenlinie zeichnen
-            ctx.beginPath();
-            ctx.moveTo(0, pcData.groundY + player.size/2);
-            ctx.lineTo(width, pcData.groundY + player.size/2);
-            ctx.lineWidth = 0.5;
-            ctx.strokeStyle = '#000';
-            ctx.stroke();
-
-            // Hürden bewegen und prüfen
-            ctx.fillStyle = '#000';
-            platforms.forEach((p, index) => {
-                p.x -= pcData.speed;
-                ctx.fillRect(p.x, p.y + player.size/2 - p.h, p.w, p.h);
-
-                // Kollisions-Check (AABB)
-                const pCenterX = player.x;
-                const pCenterY = player.y;
-                const pHalfSize = player.size / 2;
-
-                if (pCenterX + pHalfSize > p.x && 
-                    pCenterX - pHalfSize < p.x + p.w &&
-                    pCenterY + pHalfSize > p.y + pHalfSize - p.h && 
-                    pCenterY - pHalfSize < p.y + pHalfSize) {
-                    gameOver();
-                }
-
-                // Score zählen & Buchstaben wechseln
-                if (p.x + p.w < player.x && !p.passed) {
-                    p.passed = true;
-                    pcData.score++;
-                    scoreDisplay.innerText = pcData.score;
-                    // Buchstaben-Wechsel
-                    player.char = alphabet[pcData.score % alphabet.length];
-                }
-            });
-
-            // Aufräumen
-            platforms = platforms.filter(p => p.x > -20);
-        }
-
-
-        // =========================================================
-        // === MODUS 2: MOBIL GAME (Kippen & Tippen wie gehabt) ===
-        // =========================================================
-
-        function initMobileGame() {
-            goldenRatio = height * 0.618; 
-            player = { 
-                x: width / 2, 
-                y: height * 0.2,
-                char: alphabet[Math.floor(Math.random() * alphabet.length)], 
-                size: 18,
-                vx: 0, vy: 0 
-            };
-            platforms = [];
-        }
-
-        // Plattformen durch Tippen generieren
-        window.addEventListener('touchstart', (e) => {
-            if(!isPlaying || !isMobile) return;
-            const touch = e.touches[0];
-            const newX = touch.clientX - 25;
-            const newY = touch.clientY;
-
-            // Check: Nicht direkt übereinander (Mindestabstand 40px vertikal)
-            const overlap = platforms.some(p => Math.abs(p.y - newY) < 40);
-            
-            if (!overlap) {
-                platforms.push({ x: newX, y: newY, w: 50, h: 0.5 }); // Extrem dünne Linie
-            }
-        });
-
-        function handleOrientation(event) { if(isMobile) tilt = event.gamma; }
-
-        function animateMobile() {
-            player.vx = tilt * 0.5;
             player.vy += gravity;
             player.x += player.vx;
             player.y += player.vy;
@@ -243,63 +138,35 @@
             if (player.x < 0) player.x = width;
             if (player.x > width) player.x = 0;
 
-            // Kamera-Scroll (nur wenn Spieler über Golden Ratio)
             if (player.y < goldenRatio) {
                 let diff = goldenRatio - player.y;
                 player.y = goldenRatio;
                 platforms.forEach(p => p.y += diff);
             }
 
-            // Zeichne Podeste (Schwarz & Hauchdünn)
             ctx.fillStyle = '#000';
             platforms.forEach((p) => {
                 ctx.fillRect(p.x, p.y, p.w, p.h);
-                // Kollision
                 if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y > p.y && player.y < p.y + 10) {
                     player.vy = jumpStrength;
                     player.char = alphabet[Math.floor(Math.random() * alphabet.length)];
                 }
             });
 
-            // Aufräumen
             platforms = platforms.filter(p => p.y < height);
 
-            // Game Over Check
-            if (player.y > height + 100) gameOver();
-        }
-
-
-        // --- HAUPT-ANIMATIONS-SCHLEIFE ---
-        function animate() {
-            if(!isPlaying) return;
-            ctx.clearRect(0, 0, width, height);
-
-            if (isMobile) {
-                animateMobile();
-            } else {
-                animatePc();
-            }
-
-            // Buchstabe zeichnen (Gemeinsam für beide Modi)
             ctx.fillStyle = '#000';
-            // Helvetica Neue Bold, exakt wie im Header
-            ctx.font = `900 ${player.size}px 'Helvetica Neue', Helvetica`; 
+            ctx.font = `900 18px Helvetica`;
             ctx.textAlign = 'center';
             ctx.fillText(player.char, player.x, player.y);
 
-            requestAnimationFrame(animate);
-        }
-
-        function gameOver() {
-            isPlaying = false;
-            startBtn.style.display = 'block';
-            startBtn.innerText = isMobile ? "TRY AGAIN" : `SCORE: ${pcData.score} - RETRY?`;
-            
-            if (!isMobile) {
-                scoreDisplay.style.display = 'none';
-                window.removeEventListener('keydown', handlePcInput);
+            if (player.y > height + 100) {
+                init();
+                isPlaying = false; // Stoppt das Spiel
+                startBtn.style.display = 'block'; // Zeigt den Button wieder an
+            } else {
+                requestAnimationFrame(animate);
             }
-            init(); // Reset für das nächste Spiel
         }
 
         window.addEventListener('resize', init);
