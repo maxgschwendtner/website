@@ -7,13 +7,12 @@
     <style>
         body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
         
-        /* Cursor im Web unsichtbar machen */
         canvas { 
             display: block; 
             touch-action: none; 
             width: 100%; 
             height: 100%; 
-            cursor: none; 
+            cursor: default; /* Cursor wieder sichtbar */
         }
 
         #ui {
@@ -72,7 +71,10 @@
 
         let width, height, dpr, player, platforms = [], enemies = [], gravity = 0.3, jumpStrength = -9;
         let tilt = 0, isPlaying = false, goldenRatio, totalHeight = 0; 
-        let mouseX = -100, mouseY = -100; // Start außerhalb des Sichtfelds
+        
+        // Motion-Variablen für die Maus
+        let targetX = -100, targetY = -100;
+        let currentX = -100, currentY = -100;
         
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -92,7 +94,10 @@
         }
 
         window.addEventListener('mousemove', (e) => {
-            if (!isMobile) { mouseX = e.clientX; mouseY = e.clientY; }
+            if (!isMobile) { 
+                targetX = e.clientX; 
+                targetY = e.clientY; 
+            }
         });
 
         startBtn.addEventListener('click', () => {
@@ -125,27 +130,25 @@
             }
         }
 
-        function drawCoords(x, y, labelY, showDot = false) {
-            // Kleiner Zielpunkt in der Mitte
-            if(showDot) {
-                ctx.fillStyle = "#000";
-                ctx.beginPath();
-                ctx.arc(x, y, 1.5, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Koordinaten-Text (etwas größer: 11px)
+        function drawCoords(x, y, labelY) {
             ctx.font = "400 11px monospace";
             ctx.fillStyle = "rgba(0,0,0,0.6)";
             ctx.textAlign = 'center';
-            ctx.fillText(`X:${Math.round(x)} Y:${Math.round(labelY)}`, x, y + 22);
+            // Der Text klebt nicht an der Maus, sondern schwebt leicht versetzt daneben
+            ctx.fillText(`X:${Math.round(x)} Y:${Math.round(labelY)}`, x, y + 25);
         }
 
         function renderStaticWeb() {
             if (isPlaying || isMobile) return;
             ctx.clearRect(0, 0, width, height);
+            
+            // Motion Smoothing (Linear Interpolation)
+            let lerpFactor = 0.15; // Je niedriger, desto mehr "Motion" / Verzögerung
+            currentX += (targetX - currentX) * lerpFactor;
+            currentY += (targetY - currentY) * lerpFactor;
+
             drawGrid(0);
-            drawCoords(mouseX, mouseY, mouseY, true);
+            drawCoords(currentX, currentY, currentY);
             requestAnimationFrame(renderStaticWeb);
         }
 
@@ -200,7 +203,7 @@
             platforms = platforms.filter(p => p.y < height);
             enemies = enemies.filter(e => e.x > -60 && e.x < width + 60 && e.y < height);
 
-            drawCoords(player.x, player.y, totalHeight, true);
+            drawCoords(player.x, player.y, totalHeight);
 
             if (player.y > height + 100) resetToUnderConstruction();
             else requestAnimationFrame(animate);
