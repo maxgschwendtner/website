@@ -14,10 +14,9 @@
             padding: 30px; box-sizing: border-box; z-index: 10;
         }
 
-        /* Flexbox für das Header-Layout */
         .header { 
             display: flex;
-            flex-direction: column; /* Standard: Untereinander (Mobil) */
+            flex-direction: column;
             text-align: left; 
             font-size: 32px; 
             font-weight: 900; 
@@ -27,12 +26,8 @@
             text-transform: uppercase;
         }
 
-        /* Desktop-Anpassung: Nebeneinander */
         @media (min-width: 769px) {
-            .header {
-                flex-direction: row;
-                gap: 12px; /* Abstand zwischen Vor- und Nachname */
-            }
+            .header { flex-direction: row; gap: 12px; }
         }
 
         .footer { text-align: right; font-size: 11px; font-weight: 400; color: #000; pointer-events: auto; }
@@ -68,9 +63,8 @@
 
         let width, height, dpr, player, platforms = [], enemies = [], gravity = 0.3, jumpStrength = -9;
         let tilt = 0, isPlaying = false, goldenRatio, totalHeight = 0; 
-        let mouseX = 0, mouseY = 0; // Für Web-Koordinaten
+        let mouseX = 0, mouseY = 0; 
         
-        const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         function init() {
@@ -88,18 +82,11 @@
             totalHeight = 0;
             player = null;
 
-            if (!isMobile) {
-                // Desktop-spezifische Render-Schleife starten (für Raster & Maus-Koordinaten)
-                requestAnimationFrame(renderStaticWeb);
-            }
+            if (!isMobile) requestAnimationFrame(renderStaticWeb);
         }
 
-        // Mouse Tracking für Desktop-Koordinaten
         window.addEventListener('mousemove', (e) => {
-            if (!isMobile) {
-                mouseX = e.clientX;
-                mouseY = e.clientY;
-            }
+            if (!isMobile) { mouseX = e.clientX; mouseY = e.clientY; }
         });
 
         startBtn.addEventListener('click', () => {
@@ -109,9 +96,7 @@
             goldenRatio = height * 0.618; 
             player = { 
                 x: width / 2, y: height * 0.2,
-                char: alphabet[Math.floor(Math.random() * alphabet.length)], 
-                size: 20, vx: 0, vy: 0,
-                trail: []
+                vx: 0, vy: 0 
             };
 
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -139,12 +124,12 @@
 
         function drawCoords(x, y, labelY) {
             ctx.font = "400 8px monospace";
-            ctx.fillStyle = "rgba(0,0,0,0.4)";
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
             ctx.textAlign = 'center';
-            ctx.fillText(`X:${Math.round(x)} Y:${Math.round(labelY)}`, x, y + 20);
+            // Wir runden für den sauberen Look
+            ctx.fillText(`X:${Math.round(x)} Y:${Math.round(labelY)}`, x, y);
         }
 
-        // Stille Render-Schleife für Desktop (Raster & Maus)
         function renderStaticWeb() {
             if (isPlaying || isMobile) return;
             ctx.clearRect(0, 0, width, height);
@@ -175,15 +160,6 @@
                 enemies.forEach(e => e.y += diff);
             }
 
-            // Motion Trails
-            player.trail.unshift({x: player.x, y: player.y});
-            if (player.trail.length > 8) player.trail.pop();
-            player.trail.forEach((pos, i) => {
-                ctx.fillStyle = `rgba(0,0,0,${0.15 - (i * 0.02)})`;
-                ctx.font = `900 ${player.size}px 'Helvetica Neue'`;
-                ctx.fillText(player.char, pos.x, pos.y);
-            });
-
             // Gegner
             if (totalHeight > 600 && Math.random() < 0.02) {
                 enemies.push({
@@ -194,15 +170,17 @@
                 });
             }
 
+            // Plattformen
             ctx.fillStyle = '#000';
             platforms.forEach(p => {
                 ctx.fillRect(p.x, p.y, p.w, 0.5);
-                if (player.vy > 0 && player.x > p.x - 5 && player.x < p.x + p.w + 5 && player.y > p.y && player.y < p.y + 15) {
+                // Kollision (jetzt auf die Koordinaten-Position bezogen)
+                if (player.vy > 0 && player.x > p.x - 20 && player.x < p.x + p.w + 20 && player.y > p.y - 5 && player.y < p.y + 10) {
                     player.vy = jumpStrength;
-                    player.char = alphabet[Math.floor(Math.random() * alphabet.length)];
                 }
             });
 
+            // Gegner-Kollision
             enemies.forEach(e => {
                 e.x += e.vx;
                 ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2); ctx.fill();
@@ -213,14 +191,15 @@
             platforms = platforms.filter(p => p.y < height);
             enemies = enemies.filter(e => e.x > -60 && e.x < width + 60 && e.y < height);
 
-            ctx.fillStyle = '#000';
-            ctx.font = `900 ${player.size}px 'Helvetica Neue'`;
-            ctx.textAlign = 'center';
-            ctx.fillText(player.char, player.x, player.y);
-
+            // Nur die Koordinaten zeichnen
             drawCoords(player.x, player.y, totalHeight);
 
-            if (player.y > height + 50) gameOver();
+            // Status Bar am Boden
+            const barWidth = Math.min(width * (totalHeight / 10000), width);
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, height - 2, barWidth, 2);
+
+            if (player.y > height + 100) gameOver();
             else requestAnimationFrame(animate);
         }
 
