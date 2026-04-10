@@ -53,8 +53,8 @@
         const startBtn = document.getElementById('start-btn');
         const scoreDisplay = document.getElementById('score');
 
-        // PHYSIK-WERTE ERHÖHT FÜR MEHR SPEED
-        let width, height, player, platforms = [], enemies = [], gravity = 0.45, jumpStrength = -11;
+        // EXTREME PHYSIK FÜR MAXIMALEN SPEED
+        let width, height, player, platforms = [], enemies = [], gravity = 0.8, jumpStrength = -16;
         let tilt = 0, isPlaying = false, goldenRatio, totalHeight = 0; 
         const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -80,7 +80,7 @@
                 player = { 
                     x: width / 2, y: height * 0.2,
                     char: alphabet[Math.floor(Math.random() * alphabet.length)], 
-                    size: 18, vx: 0, vy: 0 
+                    size: 20, vx: 0, vy: 0 
                 };
                 if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                     DeviceOrientationEvent.requestPermission().then(res => {
@@ -90,19 +90,19 @@
                     window.addEventListener('deviceorientation', (e) => tilt = e.gamma);
                 }
             } else {
-                pcData.score = 0; pcData.speed = 7; // Startgeschwindigkeit am PC erhöht
+                pcData.score = 0; pcData.speed = 10; // Aggressiver Start am PC
                 scoreDisplay.innerText = "0";
                 scoreDisplay.style.display = 'block';
-                player = { x: width * 0.15, y: height * 0.75, char: alphabet[0], size: 24, vy: 0, isJumping: false };
+                player = { x: width * 0.15, y: height * 0.75, char: alphabet[0], size: 26, vy: 0, isJumping: false };
                 window.addEventListener('keydown', handlePcInput);
             }
             animate();
         });
 
-        let pcData = { score: 0, speed: 7, nextObstacle: 0 };
+        let pcData = { score: 0, speed: 10, nextObstacle: 0 };
         function handlePcInput(e) {
             if (e.code === 'Space' && player && !player.isJumping) {
-                player.vy = jumpStrength * 1.2;
+                player.vy = jumpStrength * 1.1;
                 player.isJumping = true;
             }
         }
@@ -112,8 +112,8 @@
             ctx.clearRect(0, 0, width, height);
 
             if (isMobile) {
-                // Direktere Steuerung
-                player.vx = tilt * 0.8;
+                // Extrem direkte Tilt-Reaktion
+                player.vx = tilt * 1.2;
                 player.vy += gravity;
                 player.x += player.vx;
                 player.y += player.vy;
@@ -124,24 +124,25 @@
                     let diff = goldenRatio - player.y;
                     player.y = goldenRatio;
                     totalHeight += diff;
-                    platforms.forEach(p => p.y += diff);
-                    enemies.forEach(e => e.y += diff);
+                    platforms.forEach(p => p.y += diff * 1.2); // Schnellere Kamera-Reaktion
+                    enemies.forEach(e => e.y += diff * 1.2);
                 }
 
-                // Gegner spawnen früher und schneller
-                if (totalHeight > 500 && Math.random() < 0.02) {
+                // Gegner-Frequenz massiv erhöht
+                if (totalHeight > 300 && Math.random() < 0.04) {
                     enemies.push({
-                        x: Math.random() < 0.5 ? -20 : width + 20,
-                        y: Math.random() * (height * 0.8),
-                        vx: (Math.random() * 4 + 2) * (Math.random() < 0.5 ? 1 : -1),
-                        radius: 4
+                        x: Math.random() < 0.5 ? -30 : width + 30,
+                        y: Math.random() * (height * 0.9),
+                        vx: (Math.random() * 6 + 4) * (Math.random() < 0.5 ? 1 : -1),
+                        radius: 5
                     });
                 }
 
                 ctx.fillStyle = '#000';
                 platforms.forEach(p => {
                     ctx.fillRect(p.x, p.y, p.w, p.h);
-                    if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y > p.y && player.y < p.y + 15) {
+                    // Größeres Kollisionsfenster für High-Speed (15 -> 25)
+                    if (player.vy > 0 && player.x > p.x - 5 && player.x < p.x + p.w + 5 && player.y > p.y && player.y < p.y + 25) {
                         player.vy = jumpStrength;
                         player.char = alphabet[Math.floor(Math.random() * alphabet.length)];
                     }
@@ -151,39 +152,39 @@
                     e.x += e.vx;
                     ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2); ctx.fill();
                     let dx = player.x - e.x; let dy = player.y - e.y;
-                    if (Math.sqrt(dx*dx + dy*dy) < 12) gameOver();
+                    if (Math.sqrt(dx*dx + dy*dy) < 15) gameOver();
                 });
 
                 platforms = platforms.filter(p => p.y < height);
-                enemies = enemies.filter(e => e.x > -50 && e.x < width + 50);
+                enemies = enemies.filter(e => e.x > -100 && e.x < width + 100);
                 if (player.y > height + 50) gameOver();
 
             } else {
-                // PC Runner Speed-Up
-                player.vy += gravity * 1.8; player.y += player.vy;
+                // PC Runner - Warp Speed
+                player.vy += gravity * 2.0; player.y += player.vy;
                 const ground = height * 0.75;
                 if (player.y > ground) { player.y = ground; player.vy = 0; player.isJumping = false; }
                 
                 pcData.nextObstacle--;
                 if (pcData.nextObstacle <= 0) {
-                    platforms.push({ x: width, y: ground + 10, w: 20, h: 1, passed: false });
-                    pcData.nextObstacle = Math.random() * 100 + 50; // Hürden kommen schneller hintereinander
+                    platforms.push({ x: width, y: ground + 10, w: 25, h: 1, passed: false });
+                    pcData.nextObstacle = Math.random() * 60 + 30; // Hindernisse kommen im Sekundentakt
                 }
                 
                 ctx.beginPath(); ctx.moveTo(0, ground + 12); ctx.lineTo(width, ground + 12);
-                ctx.lineWidth = 0.5; ctx.strokeStyle = '#000'; ctx.stroke();
+                ctx.lineWidth = 1; ctx.strokeStyle = '#000'; ctx.stroke();
                 
                 platforms.forEach(p => {
                     p.x -= pcData.speed;
-                    ctx.fillStyle = '#000'; ctx.fillRect(p.x, p.y, p.w, 1);
-                    if (player.x + 8 > p.x && player.x - 8 < p.x + p.w && player.y + 10 > p.y - 2) gameOver();
+                    ctx.fillStyle = '#000'; ctx.fillRect(p.x, p.y, p.w, 1.5);
+                    if (player.x + 10 > p.x && player.x - 10 < p.x + p.w && player.y + 12 > p.y) gameOver();
                     if (p.x + p.w < player.x && !p.passed) {
                         p.passed = true; pcData.score++; scoreDisplay.innerText = pcData.score;
                         player.char = alphabet[pcData.score % alphabet.length];
-                        pcData.speed += 0.1; // Aggressivere Beschleunigung
+                        pcData.speed += 0.25; // Massive Beschleunigung pro Hürde
                     }
                 });
-                platforms = platforms.filter(p => p.x > -30);
+                platforms = platforms.filter(p => p.x > -50);
             }
 
             if (player) {
@@ -207,8 +208,9 @@
         window.addEventListener('touchstart', (e) => {
             if(!isPlaying || !isMobile) return;
             const y = e.touches[0].clientY;
-            if (!platforms.some(p => Math.abs(p.y - y) < 30)) {
-                platforms.push({ x: e.touches[0].clientX - 25, y: y, w: 50, h: 0.5 });
+            // Toleranz für Tippen verkleinert für präziseres Bauen unter Stress
+            if (!platforms.some(p => Math.abs(p.y - y) < 20)) {
+                platforms.push({ x: e.touches[0].clientX - 25, y: y, w: 50, h: 1 });
             }
         });
 
