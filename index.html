@@ -38,6 +38,7 @@
             background: none; border: none; color: #000; cursor: pointer; pointer-events: auto;
             font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
             padding: 20px; z-index: 11;
+            white-space: nowrap;
         }
 
         @media (min-width: 769px) { #start-btn { cursor: default; } }
@@ -71,17 +72,14 @@
             dpr = window.devicePixelRatio || 1;
             width = window.innerWidth;
             height = window.innerHeight;
-            
             canvas.width = width * dpr;
             canvas.height = height * dpr;
             ctx.scale(dpr, dpr);
-
             ctx.textBaseline = 'middle';
             platforms = [];
             enemies = [];
             totalHeight = 0;
             player = null;
-
             if (!isMobile) requestAnimationFrame(renderStaticWeb);
         }
 
@@ -94,10 +92,7 @@
             startBtn.style.display = 'none';
             isPlaying = true;
             goldenRatio = height * 0.618; 
-            player = { 
-                x: width / 2, y: height * 0.2,
-                vx: 0, vy: 0 
-            };
+            player = { x: width / 2, y: height * 0.2, vx: 0, vy: 0 };
 
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission().then(res => {
@@ -126,7 +121,6 @@
             ctx.font = "400 8px monospace";
             ctx.fillStyle = "rgba(0,0,0,0.5)";
             ctx.textAlign = 'center';
-            // Wir runden für den sauberen Look
             ctx.fillText(`X:${Math.round(x)} Y:${Math.round(labelY)}`, x, y);
         }
 
@@ -141,10 +135,8 @@
         function animate() {
             if(!isPlaying) return;
             ctx.clearRect(0, 0, width, height);
-
             drawGrid(totalHeight);
 
-            // Mobil-Physik
             player.vx = tilt * 0.75; 
             player.vy += gravity;
             player.x += player.vx;
@@ -160,7 +152,6 @@
                 enemies.forEach(e => e.y += diff);
             }
 
-            // Gegner
             if (totalHeight > 600 && Math.random() < 0.02) {
                 enemies.push({
                     x: Math.random() < 0.5 ? -25 : width + 25,
@@ -170,40 +161,41 @@
                 });
             }
 
-            // Plattformen
             ctx.fillStyle = '#000';
             platforms.forEach(p => {
                 ctx.fillRect(p.x, p.y, p.w, 0.5);
-                // Kollision (jetzt auf die Koordinaten-Position bezogen)
                 if (player.vy > 0 && player.x > p.x - 20 && player.x < p.x + p.w + 20 && player.y > p.y - 5 && player.y < p.y + 10) {
                     player.vy = jumpStrength;
                 }
             });
 
-            // Gegner-Kollision
             enemies.forEach(e => {
                 e.x += e.vx;
                 ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2); ctx.fill();
-                let dx = player.x - e.x; let dy = player.y - e.y;
-                if (Math.sqrt(dx*dx + dy*dy) < 15) gameOver();
+                
+                let dx = player.x - e.x;
+                let dy = player.y - e.y;
+                let distance = Math.sqrt(dx*dx + dy*dy);
+
+                if (distance < 15) {
+                    if (player.vy > 0 && player.y < e.y) {
+                        player.vy = jumpStrength; 
+                    } else {
+                        resetToUnderConstruction();
+                    }
+                }
             });
 
             platforms = platforms.filter(p => p.y < height);
             enemies = enemies.filter(e => e.x > -60 && e.x < width + 60 && e.y < height);
 
-            // Nur die Koordinaten zeichnen
             drawCoords(player.x, player.y, totalHeight);
 
-            // Status Bar am Boden
-            const barWidth = Math.min(width * (totalHeight / 10000), width);
-            ctx.fillStyle = "#000";
-            ctx.fillRect(0, height - 2, barWidth, 2);
-
-            if (player.y > height + 100) gameOver();
+            if (player.y > height + 100) resetToUnderConstruction();
             else requestAnimationFrame(animate);
         }
 
-        function gameOver() {
+        function resetToUnderConstruction() {
             isPlaying = false;
             startBtn.style.display = 'block';
             init();
