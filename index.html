@@ -6,7 +6,7 @@
     <title>Max Gschwendtner</title>
     <style>
         body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: Helvetica, Arial, sans-serif; }
-        canvas { display: block; touch-action: none; }
+        canvas { display: block; touch-action: none; cursor: crosshair; /* Zeigt ein Fadenkreuz für besseres Zielen auf PC */ }
 
         #ui {
             position: absolute; width: 100%; top: 0; left: 0; pointer-events: none;
@@ -47,6 +47,10 @@
         let width, height, player, platforms = [], gravity = 0.25, jumpStrength = -8;
         let tilt = 0, isPlaying = false, goldenRatio; 
         const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
+        
+        // Neue Variablen für die Maussteuerung
+        let mouseX = 0;
+        let useMouse = true; // Standardmäßig auf Maus setzen
 
         function init() {
             width = window.innerWidth;
@@ -54,35 +58,57 @@
             canvas.width = width;
             canvas.height = height;
             goldenRatio = height * 0.618; 
+            mouseX = width / 2;
 
             player = { 
                 x: width / 2, 
-                y: height * 0.2, // Startet weiter oben zum Runterfallen
+                y: height * 0.2,
                 char: alphabet[Math.floor(Math.random() * alphabet.length)], 
                 vx: 0, vy: 0 
             };
             platforms = [];
         }
 
-        // Plattformen durch Tippen generieren
-        window.addEventListener('touchstart', (e) => {
+        // Hilfsfunktion zum Erstellen von Plattformen (wird für Klick und Touch genutzt)
+        function createPlatform(x, y) {
             if(!isPlaying) return;
-            const touch = e.touches[0];
-            const newX = touch.clientX - 25;
-            const newY = touch.clientY;
+            const newX = x - 25;
+            const newY = y;
 
-            // Check: Nicht direkt übereinander (Mindestabstand 40px vertikal)
             const overlap = platforms.some(p => Math.abs(p.y - newY) < 40);
             
             if (!overlap) {
-                platforms.push({ x: newX, y: newY, w: 50, h: 0.5 }); // Extrem dünne Linie
+                platforms.push({ x: newX, y: newY, w: 50, h: 0.5 }); 
             }
+        }
+
+        // --- STEUERUNG: TOUCH & KIPPEN (Smartphone) ---
+        window.addEventListener('touchstart', (e) => {
+            useMouse = false; // Umschalten auf Touch/Tilt-Modus
+            createPlatform(e.touches[0].clientX, e.touches[0].clientY);
         });
 
-        function handleOrientation(event) { tilt = event.gamma; }
+        function handleOrientation(event) { 
+            if (event.gamma !== null) {
+                tilt = event.gamma; 
+                useMouse = false; 
+            }
+        }
 
+        // --- STEUERUNG: MAUS (PC) ---
+        window.addEventListener('mousedown', (e) => {
+            useMouse = true;
+            createPlatform(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            useMouse = true;
+            mouseX = e.clientX;
+        });
+
+        // --- START-BUTTON ---
         startBtn.addEventListener('click', () => {
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission().then(res => {
                     if (res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
                 });
@@ -97,7 +123,14 @@
         function animate() {
             ctx.clearRect(0, 0, width, height);
 
-            player.vx = tilt * 0.5;
+            // Bewegung: Entweder Maus oder Neigungssensor
+            if (useMouse) {
+                // Der Buchstabe folgt der Maus weich
+                player.vx = (mouseX - player.x) * 0.15;
+            } else {
+                player.vx = tilt * 0.5;
+            }
+
             player.vy += gravity;
             player.x += player.vx;
             player.y += player.vy;
@@ -105,35 +138,35 @@
             if (player.x < 0) player.x = width;
             if (player.x > width) player.x = 0;
 
-            // Kamera-Scroll (nur wenn Spieler über Golden Ratio)
             if (player.y < goldenRatio) {
                 let diff = goldenRatio - player.y;
                 player.y = goldenRatio;
                 platforms.forEach(p => p.y += diff);
             }
 
-            // Zeichne Podeste (Schwarz & Hauchdünn)
             ctx.fillStyle = '#000';
             platforms.forEach((p) => {
                 ctx.fillRect(p.x, p.y, p.w, p.h);
-                // Kollision
                 if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y > p.y && player.y < p.y + 10) {
                     player.vy = jumpStrength;
                     player.char = alphabet[Math.floor(Math.random() * alphabet.length)];
                 }
             });
 
-            // Aufräumen
             platforms = platforms.filter(p => p.y < height);
 
-            // Buchstabe zeichnen
             ctx.fillStyle = '#000';
             ctx.font = `900 18px Helvetica`;
             ctx.textAlign = 'center';
             ctx.fillText(player.char, player.x, player.y);
 
-            if (player.y > height + 100) init();
-            requestAnimationFrame(animate);
+            if (player.y > height + 100) {
+                init();
+                isPlaying = false; // Stoppt das Spiel
+                startBtn.style.display = 'block'; // Zeigt den Button wieder an
+            } else {
+                requestAnimationFrame(animate);
+            }
         }
 
         window.addEventListener('resize', init);
