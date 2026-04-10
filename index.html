@@ -6,7 +6,15 @@
     <title>Max Gschwendtner</title>
     <style>
         body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-        canvas { display: block; touch-action: none; width: 100%; height: 100%; }
+        
+        /* Cursor im Web unsichtbar machen */
+        canvas { 
+            display: block; 
+            touch-action: none; 
+            width: 100%; 
+            height: 100%; 
+            cursor: none; 
+        }
 
         #ui {
             position: absolute; width: 100%; top: 0; left: 0; pointer-events: none;
@@ -64,7 +72,7 @@
 
         let width, height, dpr, player, platforms = [], enemies = [], gravity = 0.3, jumpStrength = -9;
         let tilt = 0, isPlaying = false, goldenRatio, totalHeight = 0; 
-        let mouseX = 0, mouseY = 0; 
+        let mouseX = -100, mouseY = -100; // Start außerhalb des Sichtfelds
         
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -117,18 +125,27 @@
             }
         }
 
-        function drawCoords(x, y, labelY) {
-            ctx.font = "400 8px monospace";
-            ctx.fillStyle = "rgba(0,0,0,0.5)";
+        function drawCoords(x, y, labelY, showDot = false) {
+            // Kleiner Zielpunkt in der Mitte
+            if(showDot) {
+                ctx.fillStyle = "#000";
+                ctx.beginPath();
+                ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Koordinaten-Text (etwas größer: 11px)
+            ctx.font = "400 11px monospace";
+            ctx.fillStyle = "rgba(0,0,0,0.6)";
             ctx.textAlign = 'center';
-            ctx.fillText(`X:${Math.round(x)} Y:${Math.round(labelY)}`, x, y);
+            ctx.fillText(`X:${Math.round(x)} Y:${Math.round(labelY)}`, x, y + 22);
         }
 
         function renderStaticWeb() {
             if (isPlaying || isMobile) return;
             ctx.clearRect(0, 0, width, height);
             drawGrid(0);
-            drawCoords(mouseX, mouseY, mouseY);
+            drawCoords(mouseX, mouseY, mouseY, true);
             requestAnimationFrame(renderStaticWeb);
         }
 
@@ -172,24 +189,18 @@
             enemies.forEach(e => {
                 e.x += e.vx;
                 ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2); ctx.fill();
-                
-                let dx = player.x - e.x;
-                let dy = player.y - e.y;
+                let dx = player.x - e.x; let dy = player.y - e.y;
                 let distance = Math.sqrt(dx*dx + dy*dy);
-
                 if (distance < 15) {
-                    if (player.vy > 0 && player.y < e.y) {
-                        player.vy = jumpStrength; 
-                    } else {
-                        resetToUnderConstruction();
-                    }
+                    if (player.vy > 0 && player.y < e.y) player.vy = jumpStrength; 
+                    else resetToUnderConstruction();
                 }
             });
 
             platforms = platforms.filter(p => p.y < height);
             enemies = enemies.filter(e => e.x > -60 && e.x < width + 60 && e.y < height);
 
-            drawCoords(player.x, player.y, totalHeight);
+            drawCoords(player.x, player.y, totalHeight, true);
 
             if (player.y > height + 100) resetToUnderConstruction();
             else requestAnimationFrame(animate);
