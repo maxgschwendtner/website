@@ -53,8 +53,8 @@
         const startBtn = document.getElementById('start-btn');
         const scoreDisplay = document.getElementById('score');
 
-        let width, height, player, platforms = [], gravity = 0.25, jumpStrength = -8;
-        let tilt = 0, isPlaying = false, goldenRatio; 
+        let width, height, player, platforms = [], enemies = [], gravity = 0.25, jumpStrength = -8;
+        let tilt = 0, isPlaying = false, goldenRatio, totalHeight = 0; 
         const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -65,7 +65,9 @@
             canvas.height = height;
             ctx.textBaseline = 'middle';
             platforms = [];
-            player = null; // Buchstabe existiert im Startbildschirm nicht
+            enemies = [];
+            totalHeight = 0;
+            player = null;
         }
 
         startBtn.addEventListener('click', () => {
@@ -73,7 +75,6 @@
             isPlaying = true;
 
             if (isMobile) {
-                // Mobil-Initialisierung erst bei Klick
                 goldenRatio = height * 0.618; 
                 player = { 
                     x: width / 2, y: height * 0.2,
@@ -82,94 +83,4 @@
                 };
                 if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                     DeviceOrientationEvent.requestPermission().then(res => {
-                        if (res === 'granted') window.addEventListener('deviceorientation', (e) => tilt = e.gamma);
-                    });
-                } else {
-                    window.addEventListener('deviceorientation', (e) => tilt = e.gamma);
-                }
-            } else {
-                // PC-Initialisierung
-                pcData.score = 0; pcData.speed = 4;
-                scoreDisplay.innerText = "0";
-                scoreDisplay.style.display = 'block';
-                player = { x: width * 0.15, y: height * 0.75, char: alphabet[0], size: 24, vy: 0, isJumping: false };
-                window.addEventListener('keydown', handlePcInput);
-            }
-            animate();
-        });
-
-        // PC Runner Logik
-        let pcData = { score: 0, speed: 4, nextObstacle: 0 };
-        function handlePcInput(e) {
-            if (e.code === 'Space' && player && !player.isJumping) {
-                player.vy = jumpStrength * 1.3;
-                player.isJumping = true;
-            }
-        }
-
-        function animate() {
-            if(!isPlaying) return;
-            ctx.clearRect(0, 0, width, height);
-
-            if (isMobile) {
-                // Mobil-Logik (Kippen & Tippen)
-                player.vx = tilt * 0.5;
-                player.vy += gravity;
-                player.x += player.vx;
-                player.y += player.vy;
-                if (player.x < 0) player.x = width; if (player.x > width) player.x = 0;
-                if (player.y < goldenRatio) {
-                    let diff = goldenRatio - player.y; player.y = goldenRatio;
-                    platforms.forEach(p => p.y += diff);
-                }
-                ctx.fillStyle = '#000';
-                platforms.forEach(p => {
-                    ctx.fillRect(p.x, p.y, p.w, p.h);
-                    if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y > p.y && player.y < p.y + 10) {
-                        player.vy = jumpStrength;
-                        player.char = alphabet[Math.floor(Math.random() * alphabet.length)];
-                    }
-                });
-                platforms = platforms.filter(p => p.y < height);
-                if (player.y > height + 50) gameOver();
-            } else {
-                // PC-Logik (Dino Runner)
-                player.vy += gravity * 1.5; player.y += player.vy;
-                const ground = height * 0.75;
-                if (player.y > ground) { player.y = ground; player.vy = 0; player.isJumping = false; }
-                
-                pcData.nextObstacle--;
-                if (pcData.nextObstacle <= 0) {
-                    platforms.push({ x: width, y: ground + player.size/2, w: 15, h: 1, passed: false });
-                    pcData.nextObstacle = Math.random() * 150 + 80;
-                }
-                ctx.beginPath(); ctx.moveTo(0, ground + player.size/2); ctx.lineTo(width, ground + player.size/2);
-                ctx.lineWidth = 0.5; ctx.strokeStyle = '#000'; ctx.stroke();
-                
-                platforms.forEach(p => {
-                    p.x -= pcData.speed;
-                    ctx.fillStyle = '#000'; ctx.fillRect(p.x, p.y - 1, p.w, 1);
-                    if (player.x + 10 > p.x && player.x - 10 < p.x + p.w && player.y + 10 > p.y - 5) gameOver();
-                    if (p.x + p.w < player.x && !p.passed) {
-                        p.passed = true; pcData.score++; scoreDisplay.innerText = pcData.score;
-                        player.char = alphabet[pcData.score % alphabet.length];
-                        pcData.speed += 0.05;
-                    }
-                });
-                platforms = platforms.filter(p => p.x > -20);
-            }
-
-            if (player) {
-                ctx.fillStyle = '#000';
-                ctx.font = `900 ${player.size}px 'Helvetica Neue', Helvetica`;
-                ctx.textAlign = 'center';
-                ctx.fillText(player.char, player.x, player.y);
-            }
-            requestAnimationFrame(animate);
-        }
-
-        function gameOver() {
-            isPlaying = false;
-            startBtn.innerText = "UNDER CONSTRUCTION"; // Immer zurück zum Ursprungstext
-            startBtn.style.display = 'block';
-            scoreDisplay.
+                        if (res === 'granted') window
