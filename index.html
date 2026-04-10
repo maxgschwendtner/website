@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Max Gschwendtner</title>
     <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: Helvetica, Arial, sans-serif; }
-        canvas { display: block; touch-action: none; cursor: crosshair; /* Zeigt ein Fadenkreuz für besseres Zielen auf PC */ }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        canvas { display: block; touch-action: none; }
 
         #ui {
             position: absolute; width: 100%; top: 0; left: 0; pointer-events: none;
@@ -16,7 +16,7 @@
 
         .header { 
             text-align: left; font-size: 32px; font-weight: 900; 
-            line-height: 0.9; letter-spacing: -1px; color: #000; text-transform: uppercase;
+            line-height: 0.9; letter-spacing: -1.5px; color: #000; text-transform: uppercase;
         }
 
         .footer { text-align: right; font-size: 11px; font-weight: 400; color: #000; pointer-events: auto; }
@@ -26,6 +26,13 @@
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: none; border: none; color: #000; cursor: pointer; pointer-events: auto;
             font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
+            padding: 20px; z-index: 11;
+        }
+
+        #score {
+            position: absolute; top: 30px; right: 30px;
+            font-size: 20px; font-weight: 900; color: #000;
+            display: none; z-index: 12;
         }
     </style>
 </head>
@@ -36,6 +43,7 @@
         <div class="footer"><a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a></div>
     </div>
 
+    <div id="score">0</div>
     <button id="start-btn">UNDER CONSTRUCTION</button>
     <canvas id="gameCanvas"></canvas>
 
@@ -43,134 +51,125 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const startBtn = document.getElementById('start-btn');
+        const scoreDisplay = document.getElementById('score');
 
         let width, height, player, platforms = [], gravity = 0.25, jumpStrength = -8;
         let tilt = 0, isPlaying = false, goldenRatio; 
         const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
-        
-        // Neue Variablen für die Maussteuerung
-        let mouseX = 0;
-        let useMouse = true; // Standardmäßig auf Maus setzen
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         function init() {
             width = window.innerWidth;
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
-            goldenRatio = height * 0.618; 
-            mouseX = width / 2;
-
-            player = { 
-                x: width / 2, 
-                y: height * 0.2,
-                char: alphabet[Math.floor(Math.random() * alphabet.length)], 
-                vx: 0, vy: 0 
-            };
+            ctx.textBaseline = 'middle';
             platforms = [];
+            player = null; // Buchstabe existiert im Startbildschirm nicht
         }
 
-        // Hilfsfunktion zum Erstellen von Plattformen (wird für Klick und Touch genutzt)
-        function createPlatform(x, y) {
-            if(!isPlaying) return;
-            const newX = x - 25;
-            const newY = y;
-
-            const overlap = platforms.some(p => Math.abs(p.y - newY) < 40);
-            
-            if (!overlap) {
-                platforms.push({ x: newX, y: newY, w: 50, h: 0.5 }); 
-            }
-        }
-
-        // --- STEUERUNG: TOUCH & KIPPEN (Smartphone) ---
-        window.addEventListener('touchstart', (e) => {
-            useMouse = false; // Umschalten auf Touch/Tilt-Modus
-            createPlatform(e.touches[0].clientX, e.touches[0].clientY);
-        });
-
-        function handleOrientation(event) { 
-            if (event.gamma !== null) {
-                tilt = event.gamma; 
-                useMouse = false; 
-            }
-        }
-
-        // --- STEUERUNG: MAUS (PC) ---
-        window.addEventListener('mousedown', (e) => {
-            useMouse = true;
-            createPlatform(e.clientX, e.clientY);
-        });
-
-        window.addEventListener('mousemove', (e) => {
-            useMouse = true;
-            mouseX = e.clientX;
-        });
-
-        // --- START-BUTTON ---
         startBtn.addEventListener('click', () => {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(res => {
-                    if (res === 'granted') window.addEventListener('deviceorientation', handleOrientation);
-                });
-            } else {
-                window.addEventListener('deviceorientation', handleOrientation);
-            }
             startBtn.style.display = 'none';
             isPlaying = true;
+
+            if (isMobile) {
+                // Mobil-Initialisierung erst bei Klick
+                goldenRatio = height * 0.618; 
+                player = { 
+                    x: width / 2, y: height * 0.2,
+                    char: alphabet[Math.floor(Math.random() * alphabet.length)], 
+                    size: 18, vx: 0, vy: 0 
+                };
+                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    DeviceOrientationEvent.requestPermission().then(res => {
+                        if (res === 'granted') window.addEventListener('deviceorientation', (e) => tilt = e.gamma);
+                    });
+                } else {
+                    window.addEventListener('deviceorientation', (e) => tilt = e.gamma);
+                }
+            } else {
+                // PC-Initialisierung
+                pcData.score = 0; pcData.speed = 4;
+                scoreDisplay.innerText = "0";
+                scoreDisplay.style.display = 'block';
+                player = { x: width * 0.15, y: height * 0.75, char: alphabet[0], size: 24, vy: 0, isJumping: false };
+                window.addEventListener('keydown', handlePcInput);
+            }
             animate();
         });
 
-        function animate() {
-            ctx.clearRect(0, 0, width, height);
-
-            // Bewegung: Entweder Maus oder Neigungssensor
-            if (useMouse) {
-                // Der Buchstabe folgt der Maus weich
-                player.vx = (mouseX - player.x) * 0.15;
-            } else {
-                player.vx = tilt * 0.5;
-            }
-
-            player.vy += gravity;
-            player.x += player.vx;
-            player.y += player.vy;
-
-            if (player.x < 0) player.x = width;
-            if (player.x > width) player.x = 0;
-
-            if (player.y < goldenRatio) {
-                let diff = goldenRatio - player.y;
-                player.y = goldenRatio;
-                platforms.forEach(p => p.y += diff);
-            }
-
-            ctx.fillStyle = '#000';
-            platforms.forEach((p) => {
-                ctx.fillRect(p.x, p.y, p.w, p.h);
-                if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y > p.y && player.y < p.y + 10) {
-                    player.vy = jumpStrength;
-                    player.char = alphabet[Math.floor(Math.random() * alphabet.length)];
-                }
-            });
-
-            platforms = platforms.filter(p => p.y < height);
-
-            ctx.fillStyle = '#000';
-            ctx.font = `900 18px Helvetica`;
-            ctx.textAlign = 'center';
-            ctx.fillText(player.char, player.x, player.y);
-
-            if (player.y > height + 100) {
-                init();
-                isPlaying = false; // Stoppt das Spiel
-                startBtn.style.display = 'block'; // Zeigt den Button wieder an
-            } else {
-                requestAnimationFrame(animate);
+        // PC Runner Logik
+        let pcData = { score: 0, speed: 4, nextObstacle: 0 };
+        function handlePcInput(e) {
+            if (e.code === 'Space' && player && !player.isJumping) {
+                player.vy = jumpStrength * 1.3;
+                player.isJumping = true;
             }
         }
 
-        window.addEventListener('resize', init);
-        init();
-    </script>
-</body>
-</html>
+        function animate() {
+            if(!isPlaying) return;
+            ctx.clearRect(0, 0, width, height);
+
+            if (isMobile) {
+                // Mobil-Logik (Kippen & Tippen)
+                player.vx = tilt * 0.5;
+                player.vy += gravity;
+                player.x += player.vx;
+                player.y += player.vy;
+                if (player.x < 0) player.x = width; if (player.x > width) player.x = 0;
+                if (player.y < goldenRatio) {
+                    let diff = goldenRatio - player.y; player.y = goldenRatio;
+                    platforms.forEach(p => p.y += diff);
+                }
+                ctx.fillStyle = '#000';
+                platforms.forEach(p => {
+                    ctx.fillRect(p.x, p.y, p.w, p.h);
+                    if (player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y > p.y && player.y < p.y + 10) {
+                        player.vy = jumpStrength;
+                        player.char = alphabet[Math.floor(Math.random() * alphabet.length)];
+                    }
+                });
+                platforms = platforms.filter(p => p.y < height);
+                if (player.y > height + 50) gameOver();
+            } else {
+                // PC-Logik (Dino Runner)
+                player.vy += gravity * 1.5; player.y += player.vy;
+                const ground = height * 0.75;
+                if (player.y > ground) { player.y = ground; player.vy = 0; player.isJumping = false; }
+                
+                pcData.nextObstacle--;
+                if (pcData.nextObstacle <= 0) {
+                    platforms.push({ x: width, y: ground + player.size/2, w: 15, h: 1, passed: false });
+                    pcData.nextObstacle = Math.random() * 150 + 80;
+                }
+                ctx.beginPath(); ctx.moveTo(0, ground + player.size/2); ctx.lineTo(width, ground + player.size/2);
+                ctx.lineWidth = 0.5; ctx.strokeStyle = '#000'; ctx.stroke();
+                
+                platforms.forEach(p => {
+                    p.x -= pcData.speed;
+                    ctx.fillStyle = '#000'; ctx.fillRect(p.x, p.y - 1, p.w, 1);
+                    if (player.x + 10 > p.x && player.x - 10 < p.x + p.w && player.y + 10 > p.y - 5) gameOver();
+                    if (p.x + p.w < player.x && !p.passed) {
+                        p.passed = true; pcData.score++; scoreDisplay.innerText = pcData.score;
+                        player.char = alphabet[pcData.score % alphabet.length];
+                        pcData.speed += 0.05;
+                    }
+                });
+                platforms = platforms.filter(p => p.x > -20);
+            }
+
+            if (player) {
+                ctx.fillStyle = '#000';
+                ctx.font = `900 ${player.size}px 'Helvetica Neue', Helvetica`;
+                ctx.textAlign = 'center';
+                ctx.fillText(player.char, player.x, player.y);
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            startBtn.innerText = "UNDER CONSTRUCTION"; // Immer zurück zum Ursprungstext
+            startBtn.style.display = 'block';
+            scoreDisplay.
