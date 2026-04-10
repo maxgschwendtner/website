@@ -162,4 +162,58 @@
                 // PC Runner Speed-Up
                 player.vy += gravity * 1.8; player.y += player.vy;
                 const ground = height * 0.75;
-                if (player.y > ground) { player.y = ground
+                if (player.y > ground) { player.y = ground; player.vy = 0; player.isJumping = false; }
+                
+                pcData.nextObstacle--;
+                if (pcData.nextObstacle <= 0) {
+                    platforms.push({ x: width, y: ground + 10, w: 20, h: 1, passed: false });
+                    pcData.nextObstacle = Math.random() * 100 + 50; // Hürden kommen schneller hintereinander
+                }
+                
+                ctx.beginPath(); ctx.moveTo(0, ground + 12); ctx.lineTo(width, ground + 12);
+                ctx.lineWidth = 0.5; ctx.strokeStyle = '#000'; ctx.stroke();
+                
+                platforms.forEach(p => {
+                    p.x -= pcData.speed;
+                    ctx.fillStyle = '#000'; ctx.fillRect(p.x, p.y, p.w, 1);
+                    if (player.x + 8 > p.x && player.x - 8 < p.x + p.w && player.y + 10 > p.y - 2) gameOver();
+                    if (p.x + p.w < player.x && !p.passed) {
+                        p.passed = true; pcData.score++; scoreDisplay.innerText = pcData.score;
+                        player.char = alphabet[pcData.score % alphabet.length];
+                        pcData.speed += 0.1; // Aggressivere Beschleunigung
+                    }
+                });
+                platforms = platforms.filter(p => p.x > -30);
+            }
+
+            if (player) {
+                ctx.fillStyle = '#000';
+                ctx.font = `900 ${player.size}px 'Helvetica Neue', Helvetica`;
+                ctx.textAlign = 'center';
+                ctx.fillText(player.char, player.x, player.y);
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            startBtn.innerText = "UNDER CONSTRUCTION";
+            startBtn.style.display = 'block';
+            scoreDisplay.style.display = 'none';
+            window.removeEventListener('keydown', handlePcInput);
+            init();
+        }
+
+        window.addEventListener('touchstart', (e) => {
+            if(!isPlaying || !isMobile) return;
+            const y = e.touches[0].clientY;
+            if (!platforms.some(p => Math.abs(p.y - y) < 30)) {
+                platforms.push({ x: e.touches[0].clientX - 25, y: y, w: 50, h: 0.5 });
+            }
+        });
+
+        window.addEventListener('resize', init);
+        init();
+    </script>
+</body>
+</html>
