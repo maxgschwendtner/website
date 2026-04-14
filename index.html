@@ -56,42 +56,47 @@
             pointer-events: none;
         }
 
+        /* Statischer Header: Bleibt immer oben links */
         .header { 
             display: flex; flex-direction: column; text-align: left; 
             font-size: 34px; font-weight: 800; line-height: 0.82; 
             letter-spacing: -2.1px; 
             color: var(--text-color); text-transform: uppercase; 
             pointer-events: auto; 
-            transition: color 1.2s ease;
             width: fit-content;
         }
         @media (min-width: 769px) { .header { flex-direction: row; gap: 10px; } }
 
-        /* Theme Switcher Kreis */
+        /* Minimalistischer Theme-Toggle Kreis (12px) */
         #theme-toggle {
-            width: 18px;
-            height: 18px;
-            border: 1.5px solid var(--circle-color);
+            width: 12px;
+            height: 12px;
+            border: 1.2px solid var(--circle-color);
             border-radius: 50%;
             cursor: pointer;
             pointer-events: auto;
-            transition: border-color 1.2s ease, transform 0.3s ease;
-            margin-top: 8px;
+            transition: border-color 1.2s ease, transform 0.2s ease;
+            margin-top: 6px;
         }
         #theme-toggle:hover {
-            transform: scale(1.1);
+            transform: scale(1.15);
         }
         
         .footer { text-align: right; font-size: 14px; pointer-events: auto; }
-        .footer a { color: var(--accent-blue); text-decoration: none; font-weight: 600; transition: color 1.2s ease; }
+        .footer a { 
+            color: var(--accent-blue); 
+            text-decoration: none; 
+            font-weight: 600; 
+            transition: color 1.2s ease;
+        }
 
+        /* Der flüchtende Button */
         #start-btn {
             position: absolute; top: 0; left: 0;
             background: none; border: none; color: #FFF000; cursor: pointer; pointer-events: auto;
             font-size: 13px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase;
             padding: 25px 35px; z-index: 11; white-space: nowrap; display: inline-block;
             will-change: left, top;
-            transition: color 0.1s ease;
         }
 
         #start-btn::before {
@@ -107,7 +112,7 @@
     <div id="ui">
         <div class="nav-top">
             <div class="header" id="main-header"><span>MAX</span><span>GSCHWENDTNER</span></div>
-            <div id="theme-toggle"></div>
+            <div id="theme-toggle" title="Farbmodus wechseln"></div>
         </div>
         <div class="footer"><a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a></div>
     </div>
@@ -129,16 +134,19 @@
         let isHovering = false;
         let pushLock = false; 
 
-        // Theme Toggle Funktion
+        // Manueller Theme-Switch per Klick auf den Kreis
         themeToggle.addEventListener('click', () => {
             const currentTheme = document.body.getAttribute('data-theme');
             document.body.setAttribute('data-theme', currentTheme === 'dark' ? 'light' : 'dark');
         });
 
-        function updateThemeInit() {
-            const hour = new Date().getHours();
-            const isNight = hour >= 18 || hour < 6;
-            document.body.setAttribute('data-theme', isNight ? 'dark' : 'light');
+        // Erkennt Initial-Modus (Uhrzeit), aber erlaubt manuelle Steuerung
+        function setInitialTheme() {
+            if (!document.body.hasAttribute('data-theme')) {
+                const hour = new Date().getHours();
+                const isNight = hour >= 18 || hour < 6;
+                document.body.setAttribute('data-theme', isNight ? 'dark' : 'light');
+            }
         }
 
         function init() {
@@ -149,21 +157,24 @@
             
             const hRect = headerEl.getBoundingClientRect();
             bounceX = width / 2; 
-            bounceY = hRect.bottom + 150; 
-            
-            if(!document.body.hasAttribute('data-theme')) updateThemeInit();
+            bounceY = hRect.bottom + 150; // Startet sicher unter dem Namen
         }
 
         window.addEventListener('mousemove', (e) => { 
             mouseX = e.clientX; mouseY = e.clientY; 
         });
 
+        // Die 33/33/33 Klick-Logik
         startBtn.addEventListener('mousedown', () => {
             const r = Math.random();
             const boost = 1.4;
-            if (r < 0.33) { speedX *= -boost; speedY *= -boost; } 
-            else if (r < 0.66) { let t = speedX; speedX = -speedY * boost; speedY = t * boost; } 
-            else { let t = speedX; speedX = speedY * boost; speedY = -t * boost; }
+            if (r < 0.33) { 
+                speedX *= -boost; speedY *= -boost; 
+            } else if (r < 0.66) { 
+                let t = speedX; speedX = -speedY * boost; speedY = t * boost; 
+            } else { 
+                let t = speedX; speedX = speedY * boost; speedY = -t * boost; 
+            }
             pushLock = true;
             setTimeout(() => { pushLock = false; }, 750); 
         });
@@ -176,11 +187,13 @@
             let dy = bounceY - mouseY;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
+            // Abstoß-Effekt (außer bei Hover oder Klick-Pause)
             if (!isHovering && !pushLock && dist < 130) {
                 speedX += dx * 0.0025;
                 speedY += dy * 0.0025;
             }
 
+            // Normalisierung der Geschwindigkeit
             const targetMag = Math.sqrt(tvSpeed**2 * 2);
             const currentMag = Math.sqrt(speedX**2 + speedY**2);
             speedX += ((speedX / currentMag * targetMag) - speedX) * 0.035;
@@ -192,8 +205,9 @@
             bounceX += speedX;
             bounceY += speedY;
 
-            // Bounce an Rändern und Header
+            // Grenzen berechnen
             if (bounceX <= rect.width/2 + 20 || bounceX >= width - rect.width/2 - 20) speedX *= -1;
+            // Prallt an der Unterkante des Namens ab (hRect.bottom)
             if (bounceY <= hRect.bottom + rect.height/2 + 15 || bounceY >= height - rect.height/2 - 20) speedY *= -1;
 
             startBtn.style.left = (bounceX - rect.width/2) + 'px';
@@ -216,6 +230,7 @@
             requestAnimationFrame(loop);
         }
 
+        setInitialTheme();
         window.addEventListener('resize', init);
         init(); loop();
     </script>
