@@ -31,6 +31,8 @@
             letter-spacing: -1.5px; 
             color: #000; 
             text-transform: uppercase;
+            /* Wichtig für die Berechnung der Kollision */
+            pointer-events: auto; 
         }
 
         @media (min-width: 769px) {
@@ -50,7 +52,6 @@
 
         #start-btn {
             position: absolute; 
-            /* Startposition wird per JS gesteuert */
             top: 50%; left: 50%; 
             transform: translate(-50%, -50%);
             background: none; border: none; 
@@ -60,7 +61,6 @@
             padding: 20px; z-index: 11;
             white-space: nowrap;
             transition: opacity 0.1s ease;
-            /* Wichtig für die Bewegung */
             margin: 0;
         }
 
@@ -70,7 +70,7 @@
 <body>
 
     <div id="ui">
-        <div class="header">
+        <div class="header" id="main-header">
             <span>MAX</span>
             <span>GSCHWENDTNER</span>
         </div>
@@ -84,6 +84,7 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const startBtn = document.getElementById('start-btn');
+        const headerEl = document.getElementById('main-header'); // Header Element
 
         let width, height, dpr, player, platforms = [], enemies = [], gravity = 0.3, jumpStrength = -9;
         let tilt = 0, isPlaying = false, goldenRatio, totalHeight = 0; 
@@ -109,16 +110,17 @@
             totalHeight = 0;
             player = null;
 
-            // Screensaver Initialisierung (nur Web)
             if (!isMobile) {
-                bounceX = width / 2;
-                bounceY = height / 2;
-                // Zufällige Richtung zum Start
+                // Startposition zufällig, aber nicht im Header
+                const headerRect = headerEl.getBoundingClientRect();
+                const startMargin = 100;
+                bounceX = startMargin + Math.random() * (width - startMargin*2);
+                bounceY = headerRect.bottom + startMargin + Math.random() * (height - headerRect.bottom - startMargin*2);
+                
                 speedX = (Math.random() > 0.5 ? 1 : -1) * 1.5;
                 speedY = (Math.random() > 0.5 ? 1 : -1) * 1.5;
                 requestAnimationFrame(renderStaticWeb);
             } else {
-                // Auf Mobile bleibt er zentriert
                 startBtn.style.top = '50%';
                 startBtn.style.left = '50%';
                 startBtn.style.transform = 'translate(-50%, -50%)';
@@ -178,15 +180,25 @@
             if (isPlaying || isMobile) return;
 
             const rect = startBtn.getBoundingClientRect();
+            const headerRect = headerEl.getBoundingClientRect(); // Header Position holen
+
             const btnW = rect.width;
             const btnH = rect.height;
+            const uiPadding = 30; // Das Padding aus dem CSS
 
             bounceX += speedX;
             bounceY += speedY;
 
-            // Kollision mit den Kanten (unter Berücksichtigung der Button-Größe)
-            if (bounceX <= btnW/2 || bounceX >= width - btnW/2) speedX *= -1;
-            if (bounceY <= btnH/2 || bounceY >= height - btnH/2) speedY *= -1;
+            // Kollision X (Kanten links/rechts)
+            if (bounceX <= btnW/2 + uiPadding || bounceX >= width - btnW/2 - uiPadding) {
+                speedX *= -1;
+            }
+
+            // Kollision Y (Oben am Header und Unten)
+            // Die obere Grenze ist die Unterkante des Headers + Padding
+            if (bounceY <= headerRect.bottom + btnH/2 || bounceY >= height - btnH/2 - uiPadding) {
+                speedY *= -1;
+            }
 
             // Position anwenden
             startBtn.style.left = bounceX + 'px';
