@@ -52,13 +52,13 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Under Construction Button - Finaler Look */
+        /* Under Construction Button - Instant Select Look */
         #start-btn {
             position: absolute; 
             top: 50%; left: 50%; 
             transform: translate(-50%, -50%);
             background: none; border: none; 
-            color: #FFF000; /* Immer Gelb */
+            color: #FFF000; 
             cursor: pointer; pointer-events: auto;
             font-size: 14px; 
             font-weight: bold; 
@@ -67,10 +67,11 @@
             padding: 2px 4px;
             z-index: 11;
             white-space: nowrap;
-            transition: opacity 0.1s ease;
             margin: 0;
             display: inline-block;
-            text-decoration: none; /* Keine Unterstreichung im Flug */
+            text-decoration: none;
+            /* Nur Opacity animieren, keine Bewegung */
+            transition: opacity 0.1s ease;
         }
 
         #start-btn::before {
@@ -80,25 +81,23 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* Helles, authentisches Mac-Blau */
-            background: #B4D5FE; 
+            background: #B4D5FE; /* macOS Auswahlblau */
             z-index: -1;
             border-radius: 2px;
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.1s ease-out;
+            display: none; /* Standardmäßig komplett ausgeblendet */
         }
 
         #start-btn:hover {
-            color: #FFF000; /* Bleibt Gelb */
-            text-decoration: underline; /* Unterstreichung kommt dazu */
+            color: #FFF000;
+            text-decoration: underline;
             text-underline-offset: 3px;
             text-decoration-thickness: 1px;
             text-decoration-color: #FFF000;
         }
 
+        /* Sofortiges Einblenden des Blocks beim Hover */
         #start-btn:hover::before {
-            transform: scaleX(1);
+            display: block;
         }
 
         @media (min-width: 769px) { #start-btn { cursor: default; } }
@@ -171,8 +170,6 @@
                     startBtn.style.display = 'none';
                     startBtn.style.opacity = '1';
                     startGame();
-                } else {
-                    startBtn.style.opacity = '1';
                 }
             }, 200);
         });
