@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Max Gschwendtner - GR Shift</title>
     <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-        canvas { display: block; width: 100%; height: 100%; cursor: none; } /* Cursor versteckt, wir zeichnen ihn selbst */
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; cursor: default; }
+        canvas { display: block; width: 100%; height: 100%; pointer-events: none; position: absolute; top: 0; left: 0; }
         
         #ui { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; padding: 30px; box-sizing: border-box; z-index: 10; }
         .header { display: flex; flex-direction: column; text-align: left; font-size: 32px; font-weight: 900; line-height: 0.9; letter-spacing: -1.5px; color: #000; text-transform: uppercase; pointer-events: auto; }
@@ -16,7 +16,7 @@
 
         #start-btn {
             position: absolute; top: 0; left: 0;
-            background: none; border: none; color: #FFF000; cursor: none; pointer-events: auto;
+            background: none; border: none; color: #FFF000; cursor: pointer; pointer-events: auto;
             font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
             padding: 25px 35px; z-index: 11; white-space: nowrap; display: inline-block;
             transition: color 0.05s ease;
@@ -56,10 +56,10 @@
         const headerEl = document.getElementById('main-header');
 
         let width, height, dpr;
-        let bounceX, bounceY, speedX = 1.2, speedY = 1.2; // Gemütliche DVD-Geschwindigkeit
-        let mouseX = -100, mouseY = -100, curX = -100, curY = -100;
+        let bounceX, bounceY, speedX = 1.1, speedY = 1.1; 
+        let mouseX = -100, mouseY = -100, lastX = 0, lastY = 0;
         let isHovering = false, hoverStartTime = 0;
-        let compassAngle = 0;
+        let mouseAngle = 0;
 
         function init() {
             dpr = window.devicePixelRatio || 1;
@@ -69,12 +69,21 @@
             bounceX = width / 2; bounceY = height / 2;
         }
 
-        window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+        window.addEventListener('mousemove', (e) => { 
+            // Berechne Richtung der Mausbewegung
+            const dx = e.clientX - mouseX;
+            const dy = e.clientY - mouseY;
+            if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
+                mouseAngle = Math.atan2(dy, dx);
+            }
+            mouseX = e.clientX; 
+            mouseY = e.clientY; 
+        });
+
         startBtn.addEventListener('mouseenter', () => { isHovering = true; hoverStartTime = Date.now(); });
         startBtn.addEventListener('mouseleave', () => { isHovering = false; });
         
         startBtn.addEventListener('mousedown', () => {
-            // Richtungswechsel-Logik (90/180 Grad)
             const r = Math.random();
             if (r < 0.33) speedX *= -1;
             else if (r < 0.66) speedY *= -1;
@@ -84,58 +93,48 @@
         function drawGrid() {
             const timeElapsed = isHovering ? (Date.now() - hoverStartTime) / 1000 : 0;
             const useGR = timeElapsed > 3;
-            ctx.fillStyle = "rgba(0,0,0,0.18)"; // Sichtbare Rasterpunkte
+            ctx.fillStyle = "rgba(0,0,0,0.18)";
             const spacing = 40;
             for (let x = 0; x <= width; x += spacing) {
                 for (let y = 0; y <= height; y += spacing) {
-                    let dx = x, dy = y;
+                    let gx = x, gy = y;
                     if (useGR) {
-                        dx += Math.sin(x * 1.618) * 4;
-                        dy += Math.cos(y * 1.618) * 4;
+                        gx += Math.sin(x * 1.618) * 4;
+                        gy += Math.cos(y * 1.618) * 4;
                     }
-                    ctx.beginPath(); ctx.arc(dx, dy, 0.7, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(gx, gy, 0.7, 0, Math.PI * 2); ctx.fill();
                 }
             }
         }
 
-        function drawCursorUI() {
-            // Smoothes Folgen des Cursors
-            curX += (mouseX - curX) * 0.2;
-            curY += (mouseY - curY) * 0.2;
-
-            const targetAngle = Math.atan2(speedY, speedX);
-            let angleDiff = targetAngle - compassAngle;
-            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-            compassAngle += angleDiff * 0.1;
-
+        function drawCursorInfo() {
             ctx.save();
-            ctx.translate(curX, curY);
+            // Etwas Offset, damit es nicht direkt unter der Windows-Maus liegt
+            ctx.translate(mouseX + 15, mouseY + 15);
             
-            // Fadenkreuz/Punkt für Cursor
-            ctx.beginPath(); ctx.arc(0, 0, 1.5, 0, Math.PI * 2); ctx.fillStyle = "#000"; ctx.fill();
-
-            // Koordinaten
             ctx.font = "400 10px monospace";
             ctx.fillStyle = "rgba(0,0,0,0.6)";
-            ctx.textAlign = "center";
-            ctx.fillText(`X:${Math.round(curX)} Y:${Math.round(curY)}`, 0, 25);
+            ctx.textAlign = "left";
             
-            // Kompass-Vektor (Dezenter Strich mit kleiner Spitze)
-            ctx.translate(0, 35);
-            ctx.rotate(compassAngle);
-            ctx.strokeStyle = "rgba(0,0,0,0.4)";
+            const txt = `X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`;
+            ctx.fillText(txt, 0, 10);
+            
+            // Kompass-Vektor (Dezenter Strich) rechts neben Text
+            const textWidth = ctx.measureText(txt).width;
+            ctx.translate(textWidth + 15, 7);
+            ctx.rotate(mouseAngle);
+            ctx.strokeStyle = "rgba(0,0,0,0.5)";
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(-5, 0); ctx.lineTo(5, 0); // Strich
-            ctx.moveTo(2, -2); ctx.lineTo(5, 0); ctx.lineTo(2, 2); // Kleine Spitze
+            ctx.moveTo(-4, 0); ctx.lineTo(4, 0); 
+            ctx.moveTo(1, -2); ctx.lineTo(4, 0); ctx.lineTo(1, 2);
             ctx.stroke();
             
             ctx.restore();
         }
 
         function update() {
-            // Fleeing-Effekt: Wenn Cursor nah, Button wegstoßen
+            // Scheu-Effekt (Fleeing)
             let dx = bounceX - mouseX;
             let dy = bounceY - mouseY;
             let dist = Math.sqrt(dx*dx + dy*dy);
@@ -150,7 +149,6 @@
             bounceX += speedX;
             bounceY += speedY;
 
-            // Wand-Kollision (Klassisch DVD)
             if (bounceX <= rect.width/2 + 20 || bounceX >= width - rect.width/2 - 20) speedX *= -1;
             if (bounceY <= headerRect.bottom + rect.height/2 || bounceY >= height - rect.height/2 - 20) speedY *= -1;
 
@@ -162,7 +160,7 @@
             ctx.clearRect(0, 0, width, height);
             drawGrid();
             update();
-            drawCursorUI();
+            drawCursorInfo();
             requestAnimationFrame(loop);
         }
 
