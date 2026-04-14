@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Max Gschwendtner - 3D Level Text</title>
+    <title>Max Gschwendtner - Subtle Physics</title>
     <style>
         :root {
             --bg-color: #ffffff;
@@ -24,65 +24,46 @@
             background: var(--bg-color); 
             transition: background 2s ease; 
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
-            cursor: default;
+            cursor: default; 
         }
 
         canvas { display: block; width: 100%; height: 100%; pointer-events: none; position: absolute; top: 0; left: 0; }
         
-        /* UI weiter in die Ecke gerückt */
-        #ui { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; padding: 15px 25px; box-sizing: border-box; z-index: 10; }
+        #ui { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; padding: 30px; box-sizing: border-box; z-index: 10; }
         
         .header { 
-            display: flex; flex-direction: column; text-align: left; font-size: 32px; font-weight: 900; line-height: 0.85; letter-spacing: -1.8px; 
+            display: flex; flex-direction: column; text-align: left; font-size: 32px; font-weight: 900; line-height: 0.9; letter-spacing: -1.5px; 
             color: var(--text-color); text-transform: uppercase; pointer-events: auto; 
             transition: color 2s ease;
         }
-        @media (min-width: 769px) { .header { flex-direction: row; gap: 10px; } }
+        @media (min-width: 769px) { .header { flex-direction: row; gap: 12px; } }
         
         .footer { text-align: right; font-size: 15px; pointer-events: auto; }
-        .footer a { color: var(--accent-blue); text-decoration: none; font-weight: 600; letter-spacing: 0.2px; transition: color 2s ease; }
-
-        #btn-wrapper {
-            position: absolute;
-            top: 0; left: 0;
-            perspective: 1000px;
-            pointer-events: none;
-            z-index: 11;
+        .footer a { 
+            color: var(--accent-blue); 
+            text-decoration: none; 
+            font-weight: 600; 
+            letter-spacing: 0.2px; 
+            transition: color 2s ease;
         }
 
         #start-btn {
-            background: none; border: none; cursor: pointer; pointer-events: auto;
-            padding: 25px 35px; white-space: nowrap; display: inline-block;
-            position: relative;
-            transform-style: preserve-3d;
-        }
-
-        /* Der rotierende gelbe Hintergrund */
-        .btn-bg {
-            position: absolute;
-            top: 22px; left: 30px; right: 30px; bottom: 22px;
-            background: #EAFF00;
-            border-radius: 2px;
-            z-index: -1;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            transform-style: preserve-3d;
-        }
-
-        #start-btn:hover .btn-bg { opacity: 1; }
-
-        /* Der Text - Bleibt immer waagerecht */
-        #start-btn span {
-            color: #FFF000;
+            position: absolute; top: 0; left: 0;
+            background: none; border: none; color: #FFF000; cursor: pointer; pointer-events: auto;
             font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
-            display: block;
-            transition: color 0.1s ease;
-            position: relative;
-            z-index: 2;
+            padding: 25px 35px; z-index: 11; white-space: nowrap; display: inline-block;
         }
 
-        #start-btn:hover span { 
-            color: #000; 
+        #start-btn::before {
+            content: ""; position: absolute; top: 22px; left: 30px; right: 30px; bottom: 22px;
+            background: #EAFF00; z-index: -1; border-radius: 2px; display: none;
+        }
+
+        #start-btn:hover { color: #000; }
+        #start-btn:hover::before { display: block; }
+
+        /* Blinken: Nur Schrift weg, kein Unterstrich */
+        #start-btn:hover span {
             animation: text-blink 4.5s infinite;
             animation-delay: 3s;
         }
@@ -100,30 +81,18 @@
         <div class="footer"><a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a></div>
     </div>
     
-    <div id="btn-wrapper">
-        <button id="start-btn">
-            <div class="btn-bg" id="bg-3d"></div>
-            <span>UNDER CONSTRUCTION</span>
-        </button>
-    </div>
-    
+    <button id="start-btn"><span>UNDER CONSTRUCTION</span></button>
     <canvas id="gameCanvas"></canvas>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const startBtn = document.getElementById('start-btn');
-        const btnBg = document.getElementById('bg-3d');
-        const btnWrapper = document.getElementById('btn-wrapper');
         const headerEl = document.getElementById('main-header');
 
         let width, height, dpr;
         const tvSpeed = 1.05; 
-        let bounceX, bounceY, speedX = tvSpeed, speedY = tvSpeed;
-        
-        let rotX = 0, rotY = 0;
-        let depth = 0, speedDepth = 0.5;
-
+        let bounceX, bounceY, speedX = tvSpeed, speedY = tvSpeed; 
         let mouseX = -2000, mouseY = -2000;
         let isHovering = false, hoverStartTime = 0;
 
@@ -143,16 +112,24 @@
         }
 
         window.addEventListener('mousemove', (e) => { 
-            mouseX = e.clientX; mouseY = e.clientY; 
+            mouseX = e.clientX; 
+            mouseY = e.clientY; 
         });
 
         startBtn.addEventListener('mousedown', () => {
-            speedX *= -1; speedY *= -1;
-            speedDepth *= -1;
+            speedX *= -1;
+            speedY *= -1;
+            speedX += (Math.random() - 0.5) * 0.4;
+            speedY += (Math.random() - 0.5) * 0.4;
         });
 
-        startBtn.addEventListener('mouseenter', () => { isHovering = true; hoverStartTime = Date.now(); });
-        startBtn.addEventListener('mouseleave', () => { isHovering = false; });
+        startBtn.addEventListener('mouseenter', () => { 
+            isHovering = true; 
+            hoverStartTime = Date.now(); 
+        });
+        startBtn.addEventListener('mouseleave', () => { 
+            isHovering = false; 
+        });
 
         function drawGrid() {
             const timeElapsed = isHovering ? (Date.now() - hoverStartTime) / 1000 : 0;
@@ -188,39 +165,31 @@
             let dy = bounceY - mouseY;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
+            // SEHR LEICHTE SCHUBS-LOGIK: 
             if (!isHovering && dist < 120) {
-                speedX += dx * 0.002;
-                speedY += dy * 0.002;
+                const pushStrength = 0.002; // Reduziert für minimalen Widerstand
+                speedX += dx * pushStrength;
+                speedY += dy * pushStrength;
             }
 
+            // Sanfte Rückkehr zur Vintage-TV-Geschwindigkeit
             const targetMag = Math.sqrt(tvSpeed**2 * 2);
             const currentMag = Math.sqrt(speedX**2 + speedY**2);
+            
             speedX += ((speedX / currentMag * targetMag) - speedX) * 0.03;
             speedY += ((speedY / currentMag * targetMag) - speedY) * 0.03;
-
-            bounceX += speedX;
-            bounceY += speedY;
-            depth += speedDepth;
-
-            // Rotation für den Hintergrund-Kasten
-            rotX += 0.4; rotY += 0.5;
-            if (depth > 40 || depth < -40) speedDepth *= -1;
 
             const rect = startBtn.getBoundingClientRect();
             const headerRect = headerEl.getBoundingClientRect();
             
+            bounceX += speedX;
+            bounceY += speedY;
+
             if (bounceX <= rect.width/2 + 20 || bounceX >= width - rect.width/2 - 20) speedX *= -1;
             if (bounceY <= headerRect.bottom + rect.height/2 || bounceY >= height - rect.height/2 - 20) speedY *= -1;
 
-            // 1. Wrapper bewegt den gesamten Button (X, Y)
-            btnWrapper.style.transform = `translate3d(${bounceX - rect.width/2}px, ${bounceY - rect.height/2}px, 0)`;
-            
-            // 2. Nur der gelbe Hintergrund rotiert (3D)
-            btnBg.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(${depth}px)`;
-            
-            // 3. Der Text (span) bewegt sich nur in der Tiefe mit, rotiert aber nicht
-            const textScale = 1 + (depth / 600);
-            startBtn.querySelector('span').style.transform = `translateZ(${depth + 10}px) scale(${textScale})`;
+            startBtn.style.left = (bounceX - rect.width/2) + 'px';
+            startBtn.style.top = (bounceY - rect.height/2) + 'px';
         }
 
         function loop() {
