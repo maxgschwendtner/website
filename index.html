@@ -7,35 +7,62 @@
     <style>
         body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
         canvas { display: block; touch-action: none; width: 100%; height: 100%; cursor: default; }
-        #ui { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; padding: 30px; box-sizing: border-box; z-index: 10; }
-        .header { display: flex; flex-direction: column; text-align: left; font-size: 32px; font-weight: 900; line-height: 0.9; letter-spacing: -1.5px; color: #000; text-transform: uppercase; pointer-events: auto; }
-        @media (min-width: 769px) { .header { flex-direction: row; gap: 12px; } }
-        .footer { text-align: right; font-size: 15px; pointer-events: auto; }
-        .footer a { color: #0000FF; text-decoration: none; font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 100; letter-spacing: 0.5px; -webkit-font-smoothing: antialiased; }
+        
+        #ui { 
+            position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; 
+            display: flex; flex-direction: column; justify-content: space-between; 
+            height: 100vh; padding: 30px; box-sizing: border-box; z-index: 10; 
+        }
 
+        .header { 
+            display: flex; flex-direction: column; text-align: left; 
+            font-size: 32px; font-weight: 900; line-height: 0.9; 
+            letter-spacing: -1.5px; color: #000; text-transform: uppercase; 
+            pointer-events: auto; 
+        }
+
+        @media (min-width: 769px) { .header { flex-direction: row; gap: 12px; } }
+
+        .footer { text-align: right; font-size: 15px; pointer-events: auto; }
+        .footer a { 
+            color: #0000FF; text-decoration: none; 
+            font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, sans-serif; 
+            font-weight: 100; letter-spacing: 0.5px; -webkit-font-smoothing: antialiased; 
+        }
+
+        /* Button mit großer Hitbox für einfaches "Anstupsen" */
         #start-btn {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: none; border: none; color: #FFF000; cursor: pointer; pointer-events: auto;
             font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
-            padding: 20px 30px; z-index: 11; white-space: nowrap; display: inline-block;
+            padding: 25px 35px; z-index: 11; white-space: nowrap; display: inline-block;
             text-decoration: none; transition: color 0.05s ease, opacity 0.1s ease;
+            -webkit-tap-highlight-color: transparent;
         }
 
+        /* Der Textmarker-Effekt (Hinterstreichung) */
         #start-btn::before {
-            content: ""; position: absolute; top: 18px; left: 25px; right: 25px; bottom: 18px;
+            content: ""; position: absolute; 
+            top: 22px; left: 30px; right: 30px; bottom: 22px;
             background: #EAFF00; z-index: -1; border-radius: 2px; display: none;
         }
 
-        #start-btn:hover { color: #000; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #000; }
+        #start-btn:hover { 
+            color: #000; text-decoration: underline; 
+            text-underline-offset: 3px; text-decoration-color: #000; 
+        }
         #start-btn:hover::before { display: block; }
+
         @media (min-width: 769px) { #start-btn { cursor: default; } }
     </style>
 </head>
 <body>
+
     <div id="ui">
         <div class="header" id="main-header"><span>MAX</span><span>GSCHWENDTNER</span></div>
         <div class="footer"><a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a></div>
     </div>
+
     <button id="start-btn">UNDER CONSTRUCTION</button>
     <canvas id="gameCanvas"></canvas>
 
@@ -45,8 +72,7 @@
         const startBtn = document.getElementById('start-btn');
         const headerEl = document.getElementById('main-header');
 
-        let width, height, dpr, player, platforms = [], enemies = [], gravity = 0.3, jumpStrength = -9;
-        let isPlaying = false, totalHeight = 0, bounceX, bounceY, speedX, speedY;
+        let width, height, dpr, isPlaying = false, bounceX, bounceY, speedX, speedY;
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         function init() {
@@ -54,22 +80,37 @@
             width = window.innerWidth; height = window.innerHeight;
             canvas.width = width * dpr; canvas.height = height * dpr;
             ctx.scale(dpr, dpr);
+
             if (!isMobile) {
-                const headerRect = headerEl.getBoundingClientRect();
                 bounceX = width / 2; bounceY = height / 2;
-                speedX = 1.8; speedY = 1.8;
-                requestAnimationFrame(renderStaticWeb);
+                speedX = 1.6; speedY = 1.6;
+                requestAnimationFrame(renderScreensaver);
+            } else {
+                startBtn.style.top = '50%'; startBtn.style.left = '50%';
             }
         }
 
+        // Die neue "Stupser"-Logik für Richtungswechsel
         function pushButton() {
-            // Invertiert die Richtung und gibt einen kleinen Speed-Kick
-            speedX = -speedX * (1 + (Math.random() * 0.2));
-            speedY = -speedY * (1 + (Math.random() * 0.2));
+            const rand = Math.random();
             
-            // Limitierung, damit er nicht zu schnell wird
-            const max = 4;
+            if (rand < 0.33) {
+                speedX *= -1; // Nur X spiegeln (~90 Grad Änderung der Bahn)
+            } else if (rand < 0.66) {
+                speedY *= -1; // Nur Y spiegeln (~90 Grad Änderung der Bahn)
+            } else {
+                speedX *= -1; speedY *= -1; // Beide spiegeln (180 Grad Rückflug)
+            }
+
+            // Kleiner Zufalls-Kick für die Geschwindigkeit
+            const kick = 0.9 + Math.random() * 0.4;
+            speedX *= kick; speedY *= kick;
+
+            // Speed-Limit, damit er nicht wegrast oder stehenbleibt
+            const min = 1.2, max = 3.5;
+            if (Math.abs(speedX) < min) speedX = min * Math.sign(speedX);
             if (Math.abs(speedX) > max) speedX = max * Math.sign(speedX);
+            if (Math.abs(speedY) < min) speedY = min * Math.sign(speedY);
             if (Math.abs(speedY) > max) speedY = max * Math.sign(speedY);
         }
 
@@ -78,31 +119,45 @@
                 pushButton();
             } else {
                 startBtn.style.opacity = '0';
-                setTimeout(() => { isPlaying = true; startBtn.style.display = 'none'; initGame(); }, 200);
+                setTimeout(() => { 
+                    isPlaying = true; 
+                    startBtn.style.display = 'none'; 
+                    // Hier würde die initGame() Logik folgen
+                }, 200);
             }
         });
 
-        function updateScreensaver() {
+        function updatePhysics() {
             if (isPlaying || isMobile) return;
             const rect = startBtn.getBoundingClientRect();
             const headerRect = headerEl.getBoundingClientRect();
             const uiPadding = 30;
-            
+
             bounceX += speedX;
             bounceY += speedY;
 
+            // Wand-Kollisionen (Abprallen)
             if (bounceX <= rect.width/2 + uiPadding || bounceX >= width - rect.width/2 - uiPadding) speedX *= -1;
             if (bounceY <= headerRect.bottom + rect.height/2 || bounceY >= height - rect.height/2 - uiPadding) speedY *= -1;
-            
+
             startBtn.style.left = bounceX + 'px';
             startBtn.style.top = bounceY + 'px';
         }
 
-        function renderStaticWeb() {
+        function renderScreensaver() {
             if (isPlaying) return;
             ctx.clearRect(0, 0, width, height);
-            updateScreensaver();
-            requestAnimationFrame(renderStaticWeb);
+            
+            // Simpler Grid-Hintergrund
+            ctx.fillStyle = "rgba(0,0,0,0.05)";
+            for (let x = 0; x <= width; x += 40) {
+                for (let y = 0; y <= height; y += 40) {
+                    ctx.beginPath(); ctx.arc(x, y, 0.5, 0, Math.PI * 2); ctx.fill();
+                }
+            }
+
+            updatePhysics();
+            requestAnimationFrame(renderScreensaver);
         }
 
         window.addEventListener('resize', init);
