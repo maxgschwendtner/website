@@ -38,32 +38,35 @@
             .header { flex-direction: row; gap: 12px; }
         }
 
+        /* Mail in extrem feiner Schrift */
         .footer { 
             text-align: right; 
-            font-size: 14px; 
-            font-weight: 500; 
+            font-size: 15px; /* Etwas größer für die Lesbarkeit der feinen Linien */
             pointer-events: auto; 
         }
         .footer a { 
             color: #0000FF; 
             text-decoration: none; 
+            /* Sehr feine Helvetica-Varianten */
+            font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+            font-weight: 100; /* Ultra dünn */
+            letter-spacing: 0.5px;
+            -webkit-font-smoothing: antialiased; /* Macht die Schrift auf Macs noch feiner */
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Under Construction jetzt in strahlendem Gelb */
         #start-btn {
             position: absolute; 
             top: 50%; left: 50%; 
             transform: translate(-50%, -50%);
             background: none; border: none; 
-            color: #FFF000; /* Strahlendes Gelb */
+            color: #FFF000; 
             cursor: pointer; pointer-events: auto;
             font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
             padding: 20px; z-index: 11;
             white-space: nowrap;
             transition: opacity 0.1s ease;
             margin: 0;
-            /* Ein leichter Text-Schatten verbessert die Lesbarkeit auf Weiß, falls gewünscht */
-            /* text-shadow: 0px 0px 1px rgba(0,0,0,0.1); */
         }
 
         @media (min-width: 769px) { #start-btn { cursor: default; } }
@@ -93,7 +96,6 @@
         
         let targetX = -100, targetY = -100;
         let currentX = -100, currentY = -100;
-
         let bounceX, bounceY, speedX, speedY;
         
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -116,7 +118,6 @@
                 const startMargin = 100;
                 bounceX = startMargin + Math.random() * (width - startMargin*2);
                 bounceY = headerRect.bottom + startMargin + Math.random() * (height - headerRect.bottom - startMargin*2);
-                
                 speedX = (Math.random() > 0.5 ? 1 : -1) * 1.5;
                 speedY = (Math.random() > 0.5 ? 1 : -1) * 1.5;
                 requestAnimationFrame(renderStaticWeb);
@@ -178,26 +179,15 @@
 
         function updateScreensaver() {
             if (isPlaying || isMobile) return;
-
             const rect = startBtn.getBoundingClientRect();
             const headerRect = headerEl.getBoundingClientRect();
-
             const btnW = rect.width;
             const btnH = rect.height;
             const uiPadding = 30;
-
             bounceX += speedX;
             bounceY += speedY;
-
-            if (bounceX <= btnW/2 + uiPadding || bounceX >= width - btnW/2 - uiPadding) {
-                speedX *= -1;
-            }
-
-            // Kollision mit Unterkante Header und Boden
-            if (bounceY <= headerRect.bottom + btnH/2 || bounceY >= height - btnH/2 - uiPadding) {
-                speedY *= -1;
-            }
-
+            if (bounceX <= btnW/2 + uiPadding || bounceX >= width - btnW/2 - uiPadding) speedX *= -1;
+            if (bounceY <= headerRect.bottom + btnH/2 || bounceY >= height - btnH/2 - uiPadding) speedY *= -1;
             startBtn.style.left = bounceX + 'px';
             startBtn.style.top = bounceY + 'px';
         }
@@ -218,14 +208,11 @@
             if(!isPlaying) return;
             ctx.clearRect(0, 0, width, height);
             drawGrid(totalHeight);
-
             player.vx = tilt * 0.75; 
             player.vy += gravity;
             player.x += player.vx;
             player.y += player.vy;
-            
             if (player.x < 0) player.x = width; if (player.x > width) player.x = 0;
-
             if (player.y < goldenRatio) {
                 let diff = goldenRatio - player.y;
                 player.y = goldenRatio;
@@ -233,7 +220,6 @@
                 platforms.forEach(p => p.y += diff);
                 enemies.forEach(e => e.y += diff);
             }
-
             if (totalHeight > 600 && Math.random() < 0.02) {
                 enemies.push({
                     x: Math.random() < 0.5 ? -25 : width + 25,
@@ -242,7 +228,6 @@
                     radius: 4.5
                 });
             }
-
             ctx.fillStyle = '#000';
             platforms.forEach(p => {
                 ctx.fillRect(p.x, p.y, p.w, 0.5);
@@ -250,7 +235,6 @@
                     player.vy = jumpStrength;
                 }
             });
-
             enemies.forEach(e => {
                 e.x += e.vx;
                 ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2); ctx.fill();
@@ -260,11 +244,9 @@
                     else resetToUnderConstruction();
                 }
             });
-
             platforms = platforms.filter(p => p.y < height);
             enemies = enemies.filter(e => e.x > -60 && e.x < width + 60 && e.y < height);
             drawCoords(player.x, player.y, totalHeight);
-
             if (player.y > height + 100) resetToUnderConstruction();
             else requestAnimationFrame(animate);
         }
