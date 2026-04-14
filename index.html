@@ -52,13 +52,13 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Under Construction Button - Instant Select Look */
+        /* Under Construction Button - Schwarz auf Neongelb Look */
         #start-btn {
             position: absolute; 
             top: 50%; left: 50%; 
             transform: translate(-50%, -50%);
             background: none; border: none; 
-            color: #FFF000; 
+            color: #FFF000; /* Standard-Gelb im Flug */
             cursor: pointer; pointer-events: auto;
             font-size: 14px; 
             font-weight: bold; 
@@ -70,8 +70,8 @@
             margin: 0;
             display: inline-block;
             text-decoration: none;
-            /* Nur Opacity animieren, keine Bewegung */
-            transition: opacity 0.1s ease;
+            /* Schneller Übergang für die Schriftfarbe */
+            transition: color 0.05s ease, opacity 0.1s ease;
         }
 
         #start-btn::before {
@@ -81,23 +81,22 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: #B4D5FE; /* macOS Auswahlblau */
+            background: #CCFF00; /* Neongelb für den Hintergrund */
             z-index: -1;
             border-radius: 2px;
-            display: none; /* Standardmäßig komplett ausgeblendet */
+            display: none; /* Instant Switch */
         }
 
         #start-btn:hover {
-            color: #FFF000;
+            color: #000000; /* Schrift wird Schwarz bei Hover */
             text-decoration: underline;
             text-underline-offset: 3px;
             text-decoration-thickness: 1px;
-            text-decoration-color: #FFF000;
+            text-decoration-color: #000000; /* Unterstreichung auch Schwarz */
         }
 
-        /* Sofortiges Einblenden des Blocks beim Hover */
         #start-btn:hover::before {
-            display: block;
+            display: block; /* Instant Hintergrund an */
         }
 
         @media (min-width: 769px) { #start-btn { cursor: default; } }
