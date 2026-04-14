@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Max Gschwendtner - 3D Stable</title>
+    <title>Max Gschwendtner - 3D Level Text</title>
     <style>
         :root {
             --bg-color: #ffffff;
@@ -29,14 +29,15 @@
 
         canvas { display: block; width: 100%; height: 100%; pointer-events: none; position: absolute; top: 0; left: 0; }
         
-        #ui { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; padding: 30px; box-sizing: border-box; z-index: 10; }
+        /* UI weiter in die Ecke gerückt */
+        #ui { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; padding: 15px 25px; box-sizing: border-box; z-index: 10; }
         
         .header { 
-            display: flex; flex-direction: column; text-align: left; font-size: 32px; font-weight: 900; line-height: 0.9; letter-spacing: -1.5px; 
+            display: flex; flex-direction: column; text-align: left; font-size: 32px; font-weight: 900; line-height: 0.85; letter-spacing: -1.8px; 
             color: var(--text-color); text-transform: uppercase; pointer-events: auto; 
             transition: color 2s ease;
         }
-        @media (min-width: 769px) { .header { flex-direction: row; gap: 12px; } }
+        @media (min-width: 769px) { .header { flex-direction: row; gap: 10px; } }
         
         .footer { text-align: right; font-size: 15px; pointer-events: auto; }
         .footer a { color: var(--accent-blue); text-decoration: none; font-weight: 600; letter-spacing: 0.2px; transition: color 2s ease; }
@@ -44,29 +45,44 @@
         #btn-wrapper {
             position: absolute;
             top: 0; left: 0;
-            perspective: 800px; /* Perspektive direkt hier für Stabilität */
+            perspective: 1000px;
             pointer-events: none;
             z-index: 11;
         }
 
         #start-btn {
-            background: none; border: none; color: #FFF000; cursor: pointer; pointer-events: auto;
-            font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
+            background: none; border: none; cursor: pointer; pointer-events: auto;
             padding: 25px 35px; white-space: nowrap; display: inline-block;
+            position: relative;
             transform-style: preserve-3d;
+        }
+
+        /* Der rotierende gelbe Hintergrund */
+        .btn-bg {
+            position: absolute;
+            top: 22px; left: 30px; right: 30px; bottom: 22px;
+            background: #EAFF00;
+            border-radius: 2px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            transform-style: preserve-3d;
+        }
+
+        #start-btn:hover .btn-bg { opacity: 1; }
+
+        /* Der Text - Bleibt immer waagerecht */
+        #start-btn span {
+            color: #FFF000;
+            font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
+            display: block;
             transition: color 0.1s ease;
+            position: relative;
+            z-index: 2;
         }
 
-        #start-btn::before {
-            content: ""; position: absolute; top: 22px; left: 30px; right: 30px; bottom: 22px;
-            background: #EAFF00; z-index: -1; border-radius: 2px; display: none;
-        }
-
-        #start-btn:hover { color: #000; }
-        #start-btn:hover::before { display: block; }
-
-        /* Blinken: Nur Schrift weg */
-        #start-btn:hover span {
+        #start-btn:hover span { 
+            color: #000; 
             animation: text-blink 4.5s infinite;
             animation-delay: 3s;
         }
@@ -85,7 +101,10 @@
     </div>
     
     <div id="btn-wrapper">
-        <button id="start-btn"><span>UNDER CONSTRUCTION</span></button>
+        <button id="start-btn">
+            <div class="btn-bg" id="bg-3d"></div>
+            <span>UNDER CONSTRUCTION</span>
+        </button>
     </div>
     
     <canvas id="gameCanvas"></canvas>
@@ -94,6 +113,7 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const startBtn = document.getElementById('start-btn');
+        const btnBg = document.getElementById('bg-3d');
         const btnWrapper = document.getElementById('btn-wrapper');
         const headerEl = document.getElementById('main-header');
 
@@ -101,8 +121,7 @@
         const tvSpeed = 1.05; 
         let bounceX, bounceY, speedX = tvSpeed, speedY = tvSpeed;
         
-        // 3D Variablen
-        let rotX = 0, rotY = 0, rotZ = 0;
+        let rotX = 0, rotY = 0;
         let depth = 0, speedDepth = 0.5;
 
         let mouseX = -2000, mouseY = -2000;
@@ -128,8 +147,7 @@
         });
 
         startBtn.addEventListener('mousedown', () => {
-            speedX *= -1.1; // Kleiner Kick beim Klick
-            speedY *= -1.1;
+            speedX *= -1; speedY *= -1;
             speedDepth *= -1;
         });
 
@@ -170,14 +188,11 @@
             let dy = bounceY - mouseY;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
-            // Subtiler Schubs
             if (!isHovering && dist < 120) {
-                const pushStrength = 0.002;
-                speedX += dx * pushStrength;
-                speedY += dy * pushStrength;
+                speedX += dx * 0.002;
+                speedY += dy * 0.002;
             }
 
-            // Rückkehr zur Soll-Geschwindigkeit
             const targetMag = Math.sqrt(tvSpeed**2 * 2);
             const currentMag = Math.sqrt(speedX**2 + speedY**2);
             speedX += ((speedX / currentMag * targetMag) - speedX) * 0.03;
@@ -187,25 +202,25 @@
             bounceY += speedY;
             depth += speedDepth;
 
-            // 3D Rotation steuern
-            rotX += 0.2;
-            rotY += 0.3;
-            if (depth > 50 || depth < -50) speedDepth *= -1;
+            // Rotation für den Hintergrund-Kasten
+            rotX += 0.4; rotY += 0.5;
+            if (depth > 40 || depth < -40) speedDepth *= -1;
 
             const rect = startBtn.getBoundingClientRect();
             const headerRect = headerEl.getBoundingClientRect();
             
-            // Kollision
             if (bounceX <= rect.width/2 + 20 || bounceX >= width - rect.width/2 - 20) speedX *= -1;
             if (bounceY <= headerRect.bottom + rect.height/2 || bounceY >= height - rect.height/2 - 20) speedY *= -1;
 
-            // CSS Update
-            btnWrapper.style.left = (bounceX - rect.width/2) + 'px';
-            btnWrapper.style.top = (bounceY - rect.height/2) + 'px';
+            // 1. Wrapper bewegt den gesamten Button (X, Y)
+            btnWrapper.style.transform = `translate3d(${bounceX - rect.width/2}px, ${bounceY - rect.height/2}px, 0)`;
             
-            // Das Logo selbst im Wrapper rotieren und skalieren
-            const scale = 1 + (depth / 500);
-            startBtn.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(${depth}px) scale(${scale})`;
+            // 2. Nur der gelbe Hintergrund rotiert (3D)
+            btnBg.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(${depth}px)`;
+            
+            // 3. Der Text (span) bewegt sich nur in der Tiefe mit, rotiert aber nicht
+            const textScale = 1 + (depth / 600);
+            startBtn.querySelector('span').style.transform = `translateZ(${depth + 10}px) scale(${textScale})`;
         }
 
         function loop() {
