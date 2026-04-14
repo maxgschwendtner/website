@@ -37,7 +37,6 @@
             .header { flex-direction: row; gap: 12px; }
         }
 
-        /* Mail bleibt blau */
         .footer { 
             text-align: right; 
             font-size: 14px; 
@@ -49,9 +48,11 @@
             text-decoration: none; 
         }
 
-        /* Button bleibt rot */
         #start-btn {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            position: absolute; 
+            /* Startposition wird per JS gesteuert */
+            top: 50%; left: 50%; 
+            transform: translate(-50%, -50%);
             background: none; border: none; 
             color: #FF0000;
             cursor: pointer; pointer-events: auto;
@@ -59,6 +60,8 @@
             padding: 20px; z-index: 11;
             white-space: nowrap;
             transition: opacity 0.1s ease;
+            /* Wichtig für die Bewegung */
+            margin: 0;
         }
 
         @media (min-width: 769px) { #start-btn { cursor: default; } }
@@ -87,6 +90,9 @@
         
         let targetX = -100, targetY = -100;
         let currentX = -100, currentY = -100;
+
+        // Screensaver Variablen
+        let bounceX, bounceY, speedX, speedY;
         
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -102,141 +108,18 @@
             enemies = [];
             totalHeight = 0;
             player = null;
-            if (!isMobile) requestAnimationFrame(renderStaticWeb);
-        }
 
-        window.addEventListener('mousemove', (e) => {
-            if (!isMobile) { targetX = e.clientX; targetY = e.clientY; }
-        });
-
-        startBtn.addEventListener('click', () => {
-            startBtn.style.opacity = '0';
-            setTimeout(() => {
-                if (isMobile) {
-                    startBtn.style.display = 'none';
-                    startBtn.style.opacity = '1';
-                    startGame();
-                } else {
-                    startBtn.style.opacity = '1';
-                }
-            }, 200);
-        });
-
-        function startGame() {
-            isPlaying = true;
-            goldenRatio = height * 0.618; 
-            player = { x: width / 2, y: height * 0.2, vx: 0, vy: 0 };
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(res => {
-                    if (res === 'granted') window.addEventListener('deviceorientation', (e) => tilt = e.gamma);
-                });
+            // Screensaver Initialisierung (nur Web)
+            if (!isMobile) {
+                bounceX = width / 2;
+                bounceY = height / 2;
+                // Zufällige Richtung zum Start
+                speedX = (Math.random() > 0.5 ? 1 : -1) * 1.5;
+                speedY = (Math.random() > 0.5 ? 1 : -1) * 1.5;
+                requestAnimationFrame(renderStaticWeb);
             } else {
-                window.addEventListener('deviceorientation', (e) => tilt = e.gamma);
+                // Auf Mobile bleibt er zentriert
+                startBtn.style.top = '50%';
+                startBtn.style.left = '50%';
+                startBtn.style.transform = 'translate(-50%, -50%)';
             }
-            animate();
-        }
-
-        function drawGrid(yOffset = 0) {
-            ctx.fillStyle = "rgba(0,0,0,0.05)";
-            const gridSize = 40;
-            const offset = yOffset % gridSize;
-            for (let x = 0; x <= width; x += gridSize) {
-                for (let y = offset; y <= height; y += gridSize) {
-                    ctx.beginPath(); ctx.arc(x, y, 0.5, 0, Math.PI * 2); ctx.fill();
-                }
-            }
-        }
-
-        function drawCoords(x, y, labelY) {
-            ctx.font = "400 11px monospace";
-            ctx.fillStyle = "rgba(0,0,0,0.6)";
-            ctx.textAlign = 'center';
-            ctx.fillText(`X:${Math.round(x)} Y:${Math.round(labelY)}`, x, y + 25);
-        }
-
-        function renderStaticWeb() {
-            if (isPlaying || isMobile) return;
-            ctx.clearRect(0, 0, width, height);
-            let lerpFactor = 0.15;
-            currentX += (targetX - currentX) * lerpFactor;
-            currentY += (targetY - currentY) * lerpFactor;
-            drawGrid(0);
-            drawCoords(currentX, currentY, currentY);
-            requestAnimationFrame(renderStaticWeb);
-        }
-
-        function animate() {
-            if(!isPlaying) return;
-            ctx.clearRect(0, 0, width, height);
-            drawGrid(totalHeight);
-
-            player.vx = tilt * 0.75; 
-            player.vy += gravity;
-            player.x += player.vx;
-            player.y += player.vy;
-            
-            if (player.x < 0) player.x = width; if (player.x > width) player.x = 0;
-
-            if (player.y < goldenRatio) {
-                let diff = goldenRatio - player.y;
-                player.y = goldenRatio;
-                totalHeight += diff;
-                platforms.forEach(p => p.y += diff);
-                enemies.forEach(e => e.y += diff);
-            }
-
-            if (totalHeight > 600 && Math.random() < 0.02) {
-                enemies.push({
-                    x: Math.random() < 0.5 ? -25 : width + 25,
-                    y: Math.random() * (height * 0.75),
-                    vx: (Math.random() * 2 + 2) * (Math.random() < 0.5 ? 1 : -1), 
-                    radius: 4.5
-                });
-            }
-
-            // Alles im Spiel wieder in Schwarz
-            ctx.fillStyle = '#000';
-            platforms.forEach(p => {
-                ctx.fillRect(p.x, p.y, p.w, 0.5);
-                if (player.vy > 0 && player.x > p.x - 20 && player.x < p.x + p.w + 20 && player.y > p.y - 5 && player.y < p.y + 10) {
-                    player.vy = jumpStrength;
-                }
-            });
-
-            enemies.forEach(e => {
-                e.x += e.vx;
-                ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2); ctx.fill();
-                let dx = player.x - e.x; let dy = player.y - e.y;
-                if (Math.sqrt(dx*dx + dy*dy) < 15) {
-                    if (player.vy > 0 && player.y < e.y) player.vy = jumpStrength; 
-                    else resetToUnderConstruction();
-                }
-            });
-
-            platforms = platforms.filter(p => p.y < height);
-            enemies = enemies.filter(e => e.x > -60 && e.x < width + 60 && e.y < height);
-            drawCoords(player.x, player.y, totalHeight);
-
-            if (player.y > height + 100) resetToUnderConstruction();
-            else requestAnimationFrame(animate);
-        }
-
-        function resetToUnderConstruction() {
-            isPlaying = false;
-            startBtn.style.display = 'block';
-            init();
-        }
-
-        window.addEventListener('touchstart', (e) => {
-            if(!isPlaying || !isMobile) return;
-            const y = e.touches[0].clientY;
-            if (!platforms.some(p => Math.abs(p.y - y) < 35)) {
-                platforms.push({ x: e.touches[0].clientX - 25, y: y, w: 50, h: 0.5 });
-            }
-        });
-
-        window.addEventListener('resize', init);
-        init();
-    </script>
-</body>
-</html>
