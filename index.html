@@ -12,12 +12,11 @@
         .header { display: flex; flex-direction: column; text-align: left; font-size: 32px; font-weight: 900; line-height: 0.9; letter-spacing: -1.5px; color: #000; text-transform: uppercase; pointer-events: auto; }
         @media (min-width: 769px) { .header { flex-direction: row; gap: 12px; } }
         
-        /* Footer Mail - Jetzt dicker geschrieben */
         .footer { text-align: right; font-size: 15px; pointer-events: auto; }
         .footer a { 
             color: #0000FF; 
             text-decoration: none; 
-            font-weight: 600; /* Vorher 100, jetzt dicker */
+            font-weight: 600; 
             letter-spacing: 0.2px; 
             -webkit-font-smoothing: antialiased;
         }
@@ -68,7 +67,6 @@
         let bounceX, bounceY, speedX = baseSpeed, speedY = baseSpeed; 
         let mouseX = -100, mouseY = -100;
         let isHovering = false, hoverStartTime = 0;
-        let mouseAngle = 0;
 
         function init() {
             dpr = window.devicePixelRatio || 1;
@@ -79,11 +77,6 @@
         }
 
         window.addEventListener('mousemove', (e) => { 
-            const dx = e.clientX - mouseX;
-            const dy = e.clientY - mouseY;
-            if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
-                mouseAngle = Math.atan2(dy, dx);
-            }
             mouseX = e.clientX; 
             mouseY = e.clientY; 
         });
@@ -117,28 +110,6 @@
             }
         }
 
-        function drawCursorInfo() {
-            ctx.save();
-            ctx.translate(mouseX + 15, mouseY + 15);
-            ctx.font = "400 10px monospace";
-            ctx.fillStyle = "rgba(0,0,0,0.6)";
-            ctx.textAlign = "left";
-            
-            const txt = `X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`;
-            ctx.fillText(txt, 0, 10);
-            
-            const textWidth = ctx.measureText(txt).width;
-            ctx.translate(textWidth + 15, 7);
-            ctx.rotate(mouseAngle);
-            ctx.strokeStyle = "rgba(0,0,0,0.5)";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(-4, 0); ctx.lineTo(4, 0); 
-            ctx.moveTo(1, -2); ctx.lineTo(4, 0); ctx.lineTo(1, 2);
-            ctx.stroke();
-            ctx.restore();
-        }
-
         function update() {
             let dx = bounceX - mouseX;
             let dy = bounceY - mouseY;
@@ -170,7 +141,6 @@
             ctx.clearRect(0, 0, width, height);
             drawGrid();
             update();
-            drawCursorInfo();
             requestAnimationFrame(loop);
         }
 
