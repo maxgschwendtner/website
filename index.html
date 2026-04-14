@@ -52,60 +52,49 @@
             -webkit-font-smoothing: antialiased;
         }
 
-/* Under Construction Button - Apple Blue Style */
-#start-btn {
-    position: absolute; 
-    top: 50%; left: 50%; 
-    transform: translate(-50%, -50%);
-    background: none; border: none; 
-    color: #FFF000; /* Strahlendes Gelb im Flug */
-    cursor: pointer; pointer-events: auto;
-    font-size: 14px; 
-    font-weight: bold; 
-    letter-spacing: 2px; 
-    text-transform: uppercase;
-    
-    text-decoration: none;
-    text-underline-offset: 4px;
-    text-decoration-thickness: 1px;
-    
-    padding: 2px 4px; 
-    z-index: 11;
-    white-space: nowrap;
-    transition: color 0.1s ease, opacity 0.1s ease;
-    margin: 0;
-    display: inline-block;
-}
+        /* Under Construction Button - Finaler Look */
+        #start-btn {
+            position: absolute; 
+            top: 50%; left: 50%; 
+            transform: translate(-50%, -50%);
+            background: none; border: none; 
+            color: #FFF000; /* Immer Gelb */
+            cursor: pointer; pointer-events: auto;
+            font-size: 14px; 
+            font-weight: bold; 
+            letter-spacing: 2px; 
+            text-transform: uppercase;
+            padding: 2px 4px;
+            z-index: 11;
+            white-space: nowrap;
+            transition: opacity 0.1s ease;
+            margin: 0;
+            display: inline-block;
+            text-decoration: none; /* Keine Unterstreichung im Flug */
+        }
 
-#start-btn::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    /* Das typische Apple-Auswahlblau */
-    background: #007AFF; 
-    z-index: -1;
-    border-radius: 2px;
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.1s ease-out;
-}
+        #start-btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Helles, authentisches Mac-Blau */
+            background: #B4D5FE; 
+            z-index: -1;
+            border-radius: 2px;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.1s ease-out;
+        }
 
-/* Hover-Zustand: Blaues Feld + Gelbe Schrift + Unterstreichung */
-#start-btn:hover {
-    color: #FFF000; /* Schrift bleibt gelb (leuchtet auf Blau) */
-    text-decoration: underline;
-    /* Die Farbe der Unterstreichung explizit auf Gelb setzen */
-    text-decoration-color: #FFF000; 
-}
-
-#start-btn:hover::before {
-    transform: scaleX(1);
-}
         #start-btn:hover {
-            color: #000; /* Text wird Schwarz auf dem Neon-Block */
+            color: #FFF000; /* Bleibt Gelb */
+            text-decoration: underline; /* Unterstreichung kommt dazu */
+            text-underline-offset: 3px;
+            text-decoration-thickness: 1px;
+            text-decoration-color: #FFF000;
         }
 
         #start-btn:hover::before {
