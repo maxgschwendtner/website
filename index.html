@@ -132,4 +132,71 @@
             ctx.fillStyle = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.18)";
             
             const spacing = 40;
-            for (let x =
+            for (let x = 0; x <= width; x += spacing) {
+                for (let y = 0; y <= height; y += spacing) {
+                    let gx = x, gy = y;
+                    if (useGR) {
+                        gx += Math.sin(x * 1.618) * 4;
+                        gy += Math.cos(y * 1.618) * 4;
+                    }
+                    ctx.beginPath(); ctx.arc(gx, gy, 0.7, 0, Math.PI * 2); ctx.fill();
+                }
+            }
+        }
+
+        function drawCursorCoords() {
+            ctx.save();
+            // Koordinaten dezent versetzt zur Mausspitze
+            ctx.translate(mouseX + 15, mouseY + 15);
+            ctx.font = "400 10px monospace";
+            // Nutzt die CSS Variable für die Textfarbe
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--info-color');
+            ctx.textAlign = "left";
+            ctx.fillText(`X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`, 0, 10);
+            ctx.restore();
+        }
+
+        function update() {
+            let dx = bounceX - mouseX;
+            let dy = bounceY - mouseY;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            
+            if (dist < 90) {
+                speedX += dx * 0.0015;
+                speedY += dy * 0.0015;
+            }
+
+            const currentTotalSpeed = Math.sqrt(speedX*speedX + speedY*speedY);
+            const targetTotalSpeed = Math.sqrt(tvSpeed*tvSpeed * 2);
+            const ratio = targetTotalSpeed / currentTotalSpeed;
+            
+            speedX *= (1 + (ratio - 1) * 0.05);
+            speedY *= (1 + (ratio - 1) * 0.05);
+
+            const rect = startBtn.getBoundingClientRect();
+            const headerRect = headerEl.getBoundingClientRect();
+            
+            bounceX += speedX;
+            bounceY += speedY;
+
+            if (bounceX <= rect.width/2 + 20 || bounceX >= width - rect.width/2 - 20) speedX *= -1;
+            if (bounceY <= headerRect.bottom + rect.height/2 || bounceY >= height - rect.height/2 - 20) speedY *= -1;
+
+            startBtn.style.left = (bounceX - rect.width/2) + 'px';
+            startBtn.style.top = (bounceY - rect.height/2) + 'px';
+        }
+
+        function loop() {
+            ctx.clearRect(0, 0, width, height);
+            drawGrid();
+            update();
+            drawCursorCoords();
+            requestAnimationFrame(loop);
+        }
+
+        window.addEventListener('resize', init);
+        setInterval(updateTheme, 60000); 
+        init(); loop();
+    </script>
+</body>
+</html>
