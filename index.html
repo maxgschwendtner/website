@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Max Gschwendtner - Vintage Refined</title>
+    <title>Max Gschwendtner - Logic Refined</title>
     <style>
         :root {
             --bg-color: #ffffff;
             --text-color: #000000;
             --accent-blue: #0000FF;
-            --info-color: rgba(0,0,0,0.6);
+            --info-color: rgba(0,0,0,0.4);
         }
 
         [data-theme='dark'] {
             --bg-color: #0a0a0a;
             --text-color: #ffffff;
             --accent-blue: #5555FF;
-            --info-color: rgba(255,255,255,0.6);
+            --info-color: rgba(255,255,255,0.4);
         }
 
         body, html { 
@@ -54,7 +54,6 @@
             padding: 25px 35px; z-index: 11; white-space: nowrap; display: inline-block;
         }
 
-        /* Das gelbe Feld - bleibt jetzt beim Hovern statisch */
         #start-btn::before {
             content: ""; position: absolute; top: 22px; left: 30px; right: 30px; bottom: 22px;
             background: #EAFF00; z-index: -1; border-radius: 2px; display: none;
@@ -63,7 +62,7 @@
         #start-btn:hover { color: #000; }
         #start-btn:hover::before { display: block; }
 
-        /* Der Text blinkt (verschwindet) nach 3 Sekunden */
+        /* Inverses Blinken: Text verschwindet, Box bleibt */
         #start-btn:hover span {
             animation: text-blink 4.5s infinite;
             animation-delay: 3s;
@@ -83,7 +82,6 @@
     </div>
     
     <button id="start-btn"><span>UNDER CONSTRUCTION</span></button>
-    
     <canvas id="gameCanvas"></canvas>
 
     <script>
@@ -95,7 +93,7 @@
         let width, height, dpr;
         const tvSpeed = 1.05; 
         let bounceX, bounceY, speedX = tvSpeed, speedY = tvSpeed; 
-        let mouseX = -1000, mouseY = -1000;
+        let mouseX = -2000, mouseY = -2000;
         let isHovering = false, hoverStartTime = 0;
 
         function updateTheme() {
@@ -114,32 +112,32 @@
         }
 
         window.addEventListener('mousemove', (e) => { 
-            mouseX = e.clientX; mouseY = e.clientY; 
+            mouseX = e.clientX; 
+            mouseY = e.clientY; 
         });
 
-        startBtn.addEventListener('mouseenter', () => { isHovering = true; hoverStartTime = Date.now(); });
-        startBtn.addEventListener('mouseleave', () => { isHovering = false; });
-        
+        // Richtungsänderung NUR bei Klick
         startBtn.addEventListener('mousedown', () => {
-            const r = Math.random();
-            if (r < 0.33) speedX *= -1;
-            else if (r < 0.66) speedY *= -1;
-            else { speedX *= -1; speedY *= -1; }
-            normalizeSpeed();
+            speedX *= -1;
+            speedY *= -1;
+            // Kleiner Impuls zur Seite für Dynamik
+            speedX += (Math.random() - 0.5) * 0.5;
+            speedY += (Math.random() - 0.5) * 0.5;
         });
 
-        function normalizeSpeed() {
-            const mag = Math.sqrt(speedX**2 + speedY**2);
-            const target = Math.sqrt(tvSpeed**2 * 2);
-            speedX = (speedX / mag) * target;
-            speedY = (speedY / mag) * target;
-        }
+        startBtn.addEventListener('mouseenter', () => { 
+            isHovering = true; 
+            hoverStartTime = Date.now(); 
+        });
+        startBtn.addEventListener('mouseleave', () => { 
+            isHovering = false; 
+        });
 
         function drawGrid() {
             const timeElapsed = isHovering ? (Date.now() - hoverStartTime) / 1000 : 0;
             const useGR = timeElapsed > 3;
             const isDark = document.body.getAttribute('data-theme') === 'dark';
-            ctx.fillStyle = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.18)";
+            ctx.fillStyle = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)";
             
             const spacing = 40;
             for (let x = 0; x <= width; x += spacing) {
@@ -165,23 +163,25 @@
         }
 
         function update() {
-            // Smoother Shove Mechanik
             let dx = bounceX - mouseX;
             let dy = bounceY - mouseY;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
-            if (dist < 120) {
-                // Kraft steigt exponentiell an, je näher man kommt
-                const force = Math.pow((120 - dist) / 120, 2) * 0.4;
-                speedX += dx * force;
-                speedY += dy * force;
+            // SCHUBS-LOGIK: Nur wenn NICHT gehovered wird
+            if (!isHovering && dist < 110) {
+                // Kraft wirkt stärker, je näher man kommt, aber bricht ab, sobald man "drauf" ist
+                const pushStrength = 0.008; 
+                speedX += dx * pushStrength;
+                speedY += dy * pushStrength;
             }
 
-            // Ganz sanfte Rückkehr zur TV-Normalgeschwindigkeit
-            const currentMag = Math.sqrt(speedX**2 + speedY**2);
+            // Rückkehr zur Soll-Geschwindigkeit (Vintage Dämpfung)
             const targetMag = Math.sqrt(tvSpeed**2 * 2);
-            speedX += ( (speedX/currentMag * targetMag) - speedX ) * 0.03;
-            speedY += ( (speedY/currentMag * targetMag) - speedY ) * 0.03;
+            const currentMag = Math.sqrt(speedX**2 + speedY**2);
+            
+            // Bringt den Speed sanft zurück auf das DVD-Niveau
+            speedX += ((speedX / currentMag * targetMag) - speedX) * 0.04;
+            speedY += ((speedY / currentMag * targetMag) - speedY) * 0.04;
 
             const rect = startBtn.getBoundingClientRect();
             const headerRect = headerEl.getBoundingClientRect();
