@@ -9,21 +9,20 @@
             --bg-color: #ffffff;
             --text-color: #000000;
             --accent-blue: #0000FF;
-            --grid-opacity: 0.18;
+            --info-color: rgba(0,0,0,0.6);
         }
 
-        /* Nachtmodus-Farben */
         [data-theme='dark'] {
             --bg-color: #0a0a0a;
             --text-color: #ffffff;
             --accent-blue: #5555FF;
-            --grid-opacity: 0.1;
+            --info-color: rgba(255,255,255,0.6);
         }
 
         body, html { 
             margin: 0; padding: 0; overflow: hidden; 
             background: var(--bg-color); 
-            transition: background 2s ease; /* Sanfter Übergang */
+            transition: background 2s ease; 
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
             cursor: default; 
         }
@@ -90,7 +89,6 @@
         const headerEl = document.getElementById('main-header');
 
         let width, height, dpr;
-        // Exakt konstante Vintage-Geschwindigkeit
         const tvSpeed = 1.05; 
         let bounceX, bounceY, speedX = tvSpeed, speedY = tvSpeed; 
         let mouseX = -500, mouseY = -500;
@@ -123,7 +121,6 @@
             if (r < 0.33) speedX *= -1;
             else if (r < 0.66) speedY *= -1;
             else { speedX *= -1; speedY *= -1; }
-            // Sofortige Rückkehr zur TV-Geschwindigkeit ohne Beschleunigung
             speedX = tvSpeed * Math.sign(speedX);
             speedY = tvSpeed * Math.sign(speedY);
         });
@@ -131,67 +128,8 @@
         function drawGrid() {
             const timeElapsed = isHovering ? (Date.now() - hoverStartTime) / 1000 : 0;
             const useGR = timeElapsed > 3;
-            
-            // Grid-Farbe passt sich dem Theme an
             const isDark = document.body.getAttribute('data-theme') === 'dark';
             ctx.fillStyle = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.18)";
             
             const spacing = 40;
-            for (let x = 0; x <= width; x += spacing) {
-                for (let y = 0; y <= height; y += spacing) {
-                    let gx = x, gy = y;
-                    if (useGR) {
-                        gx += Math.sin(x * 1.618) * 4;
-                        gy += Math.cos(y * 1.618) * 4;
-                    }
-                    ctx.beginPath(); ctx.arc(gx, gy, 0.7, 0, Math.PI * 2); ctx.fill();
-                }
-            }
-        }
-
-        function update() {
-            // "Scheu-Effekt" mit schnellerer Rückkehr zur TV-Konstante
-            let dx = bounceX - mouseX;
-            let dy = bounceY - mouseY;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-            
-            if (dist < 90) {
-                speedX += dx * 0.0015;
-                speedY += dy * 0.0015;
-            }
-
-            // Vintage-Physik: Starke Tendenz zur exakten tvSpeed (keine Reibung, sondern Magnetismus zur Soll-Geschwindigkeit)
-            const currentTotalSpeed = Math.sqrt(speedX*speedX + speedY*speedY);
-            const targetTotalSpeed = Math.sqrt(tvSpeed*tvSpeed * 2);
-            const ratio = targetTotalSpeed / currentTotalSpeed;
-            
-            speedX *= (1 + (ratio - 1) * 0.05);
-            speedY *= (1 + (ratio - 1) * 0.05);
-
-            const rect = startBtn.getBoundingClientRect();
-            const headerRect = headerEl.getBoundingClientRect();
-            
-            bounceX += speedX;
-            bounceY += speedY;
-
-            // Harte Kollision wie bei alten DVD-Playern
-            if (bounceX <= rect.width/2 + 20 || bounceX >= width - rect.width/2 - 20) speedX *= -1;
-            if (bounceY <= headerRect.bottom + rect.height/2 || bounceY >= height - rect.height/2 - 20) speedY *= -1;
-
-            startBtn.style.left = (bounceX - rect.width/2) + 'px';
-            startBtn.style.top = (bounceY - rect.height/2) + 'px';
-        }
-
-        function loop() {
-            ctx.clearRect(0, 0, width, height);
-            drawGrid();
-            update();
-            requestAnimationFrame(loop);
-        }
-
-        window.addEventListener('resize', init);
-        setInterval(updateTheme, 60000); // Check jede Minute für Tag/Nacht Wechsel
-        init(); loop();
-    </script>
-</body>
-</html>
+            for (let x =
