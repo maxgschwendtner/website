@@ -52,24 +52,23 @@
             -webkit-font-smoothing: antialiased;
         }
 
-     /* Under Construction Button mit Apple-Style Marker & Unterstreichung */
+/* Under Construction Button - Apple Blue Style */
 #start-btn {
     position: absolute; 
     top: 50%; left: 50%; 
     transform: translate(-50%, -50%);
     background: none; border: none; 
-    color: #FFF000; 
+    color: #FFF000; /* Strahlendes Gelb im Flug */
     cursor: pointer; pointer-events: auto;
     font-size: 14px; 
     font-weight: bold; 
     letter-spacing: 2px; 
     text-transform: uppercase;
-    /* Unterstreichung direkt am Text */
-    text-decoration: underline;
+    
+    text-decoration: none;
     text-underline-offset: 4px;
     text-decoration-thickness: 1px;
     
-    /* Engeres Padding für den Apple-Look */
     padding: 2px 4px; 
     z-index: 11;
     white-space: nowrap;
@@ -78,25 +77,28 @@
     display: inline-block;
 }
 
-/* Der Apple-Style Textmarker (Hinterstreichung) */
 #start-btn::before {
     content: "";
     position: absolute;
-    /* Apple-Markierung sitzt fast perfekt auf der Texthöhe */
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: #EAFF00; /* Neon-Gelb */
+    /* Das typische Apple-Auswahlblau */
+    background: #007AFF; 
     z-index: -1;
-    border-radius: 2px; /* Ganz leicht abgerundet wie bei Apple */
+    border-radius: 2px;
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.1s ease-out;
 }
 
+/* Hover-Zustand: Blaues Feld + Gelbe Schrift + Unterstreichung */
 #start-btn:hover {
-    color: #000; /* Text wird Schwarz, Unterstreichung bleibt sichtbar */
+    color: #FFF000; /* Schrift bleibt gelb (leuchtet auf Blau) */
+    text-decoration: underline;
+    /* Die Farbe der Unterstreichung explizit auf Gelb setzen */
+    text-decoration-color: #FFF000; 
 }
 
 #start-btn:hover::before {
