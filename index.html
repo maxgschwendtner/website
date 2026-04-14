@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Max Gschwendtner - Subtle Physics</title>
+    <title>Max Gschwendtner - Sharp 2D Architecture</title>
     <style>
         :root {
             --bg-color: #ffffff;
             --text-color: #000000;
             --accent-blue: #0000FF;
-            --info-color: rgba(0,0,0,0.4);
+            --info-color: rgba(0,0,0,0.5);
         }
 
         [data-theme='dark'] {
             --bg-color: #0a0a0a;
             --text-color: #ffffff;
             --accent-blue: #5555FF;
-            --info-color: rgba(255,255,255,0.4);
+            --info-color: rgba(255,255,255,0.5);
         }
 
         body, html { 
@@ -25,6 +25,10 @@
             transition: background 2s ease; 
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
             cursor: default; 
+            /* Globale Schärfe-Optimierung */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
 
         canvas { display: block; width: 100%; height: 100%; pointer-events: none; position: absolute; top: 0; left: 0; }
@@ -32,7 +36,7 @@
         #ui { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; padding: 30px; box-sizing: border-box; z-index: 10; }
         
         .header { 
-            display: flex; flex-direction: column; text-align: left; font-size: 32px; font-weight: 900; line-height: 0.9; letter-spacing: -1.5px; 
+            display: flex; flex-direction: column; text-align: left; font-size: 32px; font-weight: 900; line-height: 0.9; letter-spacing: -1.8px; 
             color: var(--text-color); text-transform: uppercase; pointer-events: auto; 
             transition: color 2s ease;
         }
@@ -50,28 +54,29 @@
         #start-btn {
             position: absolute; top: 0; left: 0;
             background: none; border: none; color: #FFF000; cursor: pointer; pointer-events: auto;
-            font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
+            font-size: 14px; font-weight: 900; letter-spacing: 2.2px; text-transform: uppercase;
             padding: 25px 35px; z-index: 11; white-space: nowrap; display: inline-block;
+            /* Schärfe für den Button-Text */
+            -webkit-font-smoothing: antialiased;
         }
 
         #start-btn::before {
             content: ""; position: absolute; top: 22px; left: 30px; right: 30px; bottom: 22px;
-            background: #EAFF00; z-index: -1; border-radius: 2px; display: none;
+            background: #EAFF00; z-index: -1; border-radius: 1px; display: none;
         }
 
         #start-btn:hover { color: #000; }
         #start-btn:hover::before { display: block; }
 
-        /* Blinken: Nur Schrift weg, kein Unterstrich */
+        /* Einmaliges Ausblenden für 1,5s beim Hover */
         #start-btn:hover span {
-            animation: text-blink 4.5s infinite;
-            animation-delay: 3s;
+            animation: hide-once 1.5s ease-out forwards;
         }
 
-        @keyframes text-blink {
-            0%, 10%, 20%, 30% { opacity: 1; }
-            5%, 15%, 25% { opacity: 0; }
-            33.1%, 100% { opacity: 1; }
+        @keyframes hide-once {
+            0% { opacity: 0; }
+            99% { opacity: 0; }
+            100% { opacity: 1; }
         }
     </style>
 </head>
@@ -94,7 +99,7 @@
         const tvSpeed = 1.05; 
         let bounceX, bounceY, speedX = tvSpeed, speedY = tvSpeed; 
         let mouseX = -2000, mouseY = -2000;
-        let isHovering = false, hoverStartTime = 0;
+        let isHovering = false;
 
         function updateTheme() {
             const hour = new Date().getHours();
@@ -119,33 +124,19 @@
         startBtn.addEventListener('mousedown', () => {
             speedX *= -1;
             speedY *= -1;
-            speedX += (Math.random() - 0.5) * 0.4;
-            speedY += (Math.random() - 0.5) * 0.4;
         });
 
-        startBtn.addEventListener('mouseenter', () => { 
-            isHovering = true; 
-            hoverStartTime = Date.now(); 
-        });
-        startBtn.addEventListener('mouseleave', () => { 
-            isHovering = false; 
-        });
+        startBtn.addEventListener('mouseenter', () => { isHovering = true; });
+        startBtn.addEventListener('mouseleave', () => { isHovering = false; });
 
         function drawGrid() {
-            const timeElapsed = isHovering ? (Date.now() - hoverStartTime) / 1000 : 0;
-            const useGR = timeElapsed > 3;
             const isDark = document.body.getAttribute('data-theme') === 'dark';
             ctx.fillStyle = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)";
             
             const spacing = 40;
             for (let x = 0; x <= width; x += spacing) {
                 for (let y = 0; y <= height; y += spacing) {
-                    let gx = x, gy = y;
-                    if (useGR) {
-                        gx += Math.sin(x * 1.618) * 4;
-                        gy += Math.cos(y * 1.618) * 4;
-                    }
-                    ctx.beginPath(); ctx.arc(gx, gy, 0.7, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(x, y, 0.7, 0, Math.PI * 2); ctx.fill();
                 }
             }
         }
@@ -165,14 +156,12 @@
             let dy = bounceY - mouseY;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
-            // SEHR LEICHTE SCHUBS-LOGIK: 
             if (!isHovering && dist < 120) {
-                const pushStrength = 0.002; // Reduziert für minimalen Widerstand
+                const pushStrength = 0.002;
                 speedX += dx * pushStrength;
                 speedY += dy * pushStrength;
             }
 
-            // Sanfte Rückkehr zur Vintage-TV-Geschwindigkeit
             const targetMag = Math.sqrt(tvSpeed**2 * 2);
             const currentMag = Math.sqrt(speedX**2 + speedY**2);
             
