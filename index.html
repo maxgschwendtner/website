@@ -38,6 +38,7 @@
             .header { flex-direction: row; gap: 12px; }
         }
 
+        /* Mail in extrem feiner Schrift */
         .footer { 
             text-align: right; 
             font-size: 15px; 
@@ -50,8 +51,10 @@
             font-weight: 100;
             letter-spacing: 0.5px;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
+        /* Under Construction Button */
         #start-btn {
             position: absolute; 
             top: 50%; left: 50%; 
@@ -69,21 +72,23 @@
             margin: 0;
             display: inline-block;
             text-decoration: none;
+            /* Schnelle Farbumschaltung */
             transition: color 0.05s ease, opacity 0.1s ease;
         }
 
+        /* Der Apple-Style Marker (Instant) */
         #start-btn::before {
             content: "";
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: #EAFF00; 
+            background: #EAFF00; /* Neongelb Markierung */
             z-index: -1;
             border-radius: 2px;
             display: none;
         }
 
         #start-btn:hover {
-            color: #000000; 
+            color: #000000; /* Schwarze Schrift auf Gelb */
             text-decoration: underline;
             text-underline-offset: 3px;
             text-decoration-thickness: 1px;
@@ -91,7 +96,7 @@
         }
 
         #start-btn:hover::before {
-            display: block;
+            display: block; /* Sofort da */
         }
 
         @media (min-width: 769px) { #start-btn { cursor: default; } }
@@ -139,7 +144,11 @@
                 const startMargin = 100;
                 bounceX = startMargin + Math.random() * (width - startMargin*2);
                 bounceY = headerRect.bottom + startMargin + Math.random() * (height - headerRect.bottom - startMargin*2);
-                setRandomDirection();
+                
+                // Initialer Startwert
+                speedX = (Math.random() > 0.5 ? 1.5 : -1.5);
+                speedY = (Math.random() > 0.5 ? 1.5 : -1.5);
+                
                 requestAnimationFrame(renderStaticWeb);
             } else {
                 startBtn.style.top = '50%';
@@ -148,10 +157,24 @@
             }
         }
 
-        function setRandomDirection() {
-            // Wählt eine der 4 diagonalen Richtungen (1.5 Speed)
-            speedX = (Math.random() > 0.5 ? 1.5 : -1.5);
-            speedY = (Math.random() > 0.5 ? 1.5 : -1.5);
+        // Logik für den Richtungswechsel: Zwingend entgegengesetzt
+        function redirectOnBounce() {
+            // Richtung umkehren
+            speedX = -speedX;
+            speedY = -speedY;
+            
+            // Kleiner Jitter (Zufallsfaktor), damit der Winkel variiert
+            const jitterX = 0.8 + Math.random() * 0.6;
+            const jitterY = 0.8 + Math.random() * 0.6;
+            speedX *= jitterX;
+            speedY *= jitterY;
+
+            // Speed Limitierung (nicht zu langsam, nicht zu schnell)
+            const maxS = 2.5; const minS = 1.0;
+            if (Math.abs(speedX) > maxS) speedX = maxS * Math.sign(speedX);
+            if (Math.abs(speedX) < minS) speedX = minS * Math.sign(speedX);
+            if (Math.abs(speedY) > maxS) speedY = maxS * Math.sign(speedY);
+            if (Math.abs(speedY) < minS) speedY = minS * Math.sign(speedY);
         }
 
         window.addEventListener('mousemove', (e) => {
@@ -160,9 +183,10 @@
 
         startBtn.addEventListener('click', (e) => {
             if (!isMobile) {
-                // Zufälliger Richtungswechsel bei Klick
-                setRandomDirection();
+                // Auf Desktop: Nur wegstoßen
+                redirectOnBounce();
             } else {
+                // Auf Mobile: Spiel starten
                 startBtn.style.opacity = '0';
                 setTimeout(() => {
                     startBtn.style.display = 'none';
@@ -207,7 +231,7 @@
             bounceX += speedX;
             bounceY += speedY;
 
-            // Kollisions-Abpraller (Wände)
+            // Wand-Kollisionen
             if (bounceX <= btnW/2 + uiPadding || bounceX >= width - btnW/2 - uiPadding) speedX *= -1;
             if (bounceY <= headerRect.bottom + btnH/2 || bounceY >= height - btnH/2 - uiPadding) speedY *= -1;
             
