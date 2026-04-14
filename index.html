@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Max Gschwendtner - Logic Refined</title>
+    <title>Max Gschwendtner - Subtle Physics</title>
     <style>
         :root {
             --bg-color: #ffffff;
@@ -62,16 +62,16 @@
         #start-btn:hover { color: #000; }
         #start-btn:hover::before { display: block; }
 
-        /* Inverses Blinken: Text verschwindet, Box bleibt */
+        /* Blinken: Nur Schrift weg, kein Unterstrich */
         #start-btn:hover span {
             animation: text-blink 4.5s infinite;
             animation-delay: 3s;
         }
 
         @keyframes text-blink {
-            0%, 10%, 20%, 30% { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
-            5%, 15%, 25% { opacity: 0; text-decoration: none; }
-            33.1%, 100% { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
+            0%, 10%, 20%, 30% { opacity: 1; }
+            5%, 15%, 25% { opacity: 0; }
+            33.1%, 100% { opacity: 1; }
         }
     </style>
 </head>
@@ -116,13 +116,11 @@
             mouseY = e.clientY; 
         });
 
-        // Richtungsänderung NUR bei Klick
         startBtn.addEventListener('mousedown', () => {
             speedX *= -1;
             speedY *= -1;
-            // Kleiner Impuls zur Seite für Dynamik
-            speedX += (Math.random() - 0.5) * 0.5;
-            speedY += (Math.random() - 0.5) * 0.5;
+            speedX += (Math.random() - 0.5) * 0.4;
+            speedY += (Math.random() - 0.5) * 0.4;
         });
 
         startBtn.addEventListener('mouseenter', () => { 
@@ -167,21 +165,19 @@
             let dy = bounceY - mouseY;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
-            // SCHUBS-LOGIK: Nur wenn NICHT gehovered wird
-            if (!isHovering && dist < 110) {
-                // Kraft wirkt stärker, je näher man kommt, aber bricht ab, sobald man "drauf" ist
-                const pushStrength = 0.008; 
+            // SEHR LEICHTE SCHUBS-LOGIK: 
+            if (!isHovering && dist < 120) {
+                const pushStrength = 0.002; // Reduziert für minimalen Widerstand
                 speedX += dx * pushStrength;
                 speedY += dy * pushStrength;
             }
 
-            // Rückkehr zur Soll-Geschwindigkeit (Vintage Dämpfung)
+            // Sanfte Rückkehr zur Vintage-TV-Geschwindigkeit
             const targetMag = Math.sqrt(tvSpeed**2 * 2);
             const currentMag = Math.sqrt(speedX**2 + speedY**2);
             
-            // Bringt den Speed sanft zurück auf das DVD-Niveau
-            speedX += ((speedX / currentMag * targetMag) - speedX) * 0.04;
-            speedY += ((speedY / currentMag * targetMag) - speedY) * 0.04;
+            speedX += ((speedX / currentMag * targetMag) - speedX) * 0.03;
+            speedY += ((speedY / currentMag * targetMag) - speedY) * 0.03;
 
             const rect = startBtn.getBoundingClientRect();
             const headerRect = headerEl.getBoundingClientRect();
@@ -189,7 +185,6 @@
             bounceX += speedX;
             bounceY += speedY;
 
-            // Wand-Abprall
             if (bounceX <= rect.width/2 + 20 || bounceX >= width - rect.width/2 - 20) speedX *= -1;
             if (bounceY <= headerRect.bottom + rect.height/2 || bounceY >= height - rect.height/2 - 20) speedY *= -1;
 
