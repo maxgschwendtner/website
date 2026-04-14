@@ -31,7 +31,6 @@
             letter-spacing: -1.5px; 
             color: #000; 
             text-transform: uppercase;
-            /* Wichtig für die Berechnung der Kollision */
             pointer-events: auto; 
         }
 
@@ -50,18 +49,21 @@
             text-decoration: none; 
         }
 
+        /* Under Construction jetzt in strahlendem Gelb */
         #start-btn {
             position: absolute; 
             top: 50%; left: 50%; 
             transform: translate(-50%, -50%);
             background: none; border: none; 
-            color: #FF0000;
+            color: #FFF000; /* Strahlendes Gelb */
             cursor: pointer; pointer-events: auto;
             font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
             padding: 20px; z-index: 11;
             white-space: nowrap;
             transition: opacity 0.1s ease;
             margin: 0;
+            /* Ein leichter Text-Schatten verbessert die Lesbarkeit auf Weiß, falls gewünscht */
+            /* text-shadow: 0px 0px 1px rgba(0,0,0,0.1); */
         }
 
         @media (min-width: 769px) { #start-btn { cursor: default; } }
@@ -84,7 +86,7 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const startBtn = document.getElementById('start-btn');
-        const headerEl = document.getElementById('main-header'); // Header Element
+        const headerEl = document.getElementById('main-header');
 
         let width, height, dpr, player, platforms = [], enemies = [], gravity = 0.3, jumpStrength = -9;
         let tilt = 0, isPlaying = false, goldenRatio, totalHeight = 0; 
@@ -92,7 +94,6 @@
         let targetX = -100, targetY = -100;
         let currentX = -100, currentY = -100;
 
-        // Screensaver Variablen
         let bounceX, bounceY, speedX, speedY;
         
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -111,7 +112,6 @@
             player = null;
 
             if (!isMobile) {
-                // Startposition zufällig, aber nicht im Header
                 const headerRect = headerEl.getBoundingClientRect();
                 const startMargin = 100;
                 bounceX = startMargin + Math.random() * (width - startMargin*2);
@@ -180,27 +180,24 @@
             if (isPlaying || isMobile) return;
 
             const rect = startBtn.getBoundingClientRect();
-            const headerRect = headerEl.getBoundingClientRect(); // Header Position holen
+            const headerRect = headerEl.getBoundingClientRect();
 
             const btnW = rect.width;
             const btnH = rect.height;
-            const uiPadding = 30; // Das Padding aus dem CSS
+            const uiPadding = 30;
 
             bounceX += speedX;
             bounceY += speedY;
 
-            // Kollision X (Kanten links/rechts)
             if (bounceX <= btnW/2 + uiPadding || bounceX >= width - btnW/2 - uiPadding) {
                 speedX *= -1;
             }
 
-            // Kollision Y (Oben am Header und Unten)
-            // Die obere Grenze ist die Unterkante des Headers + Padding
+            // Kollision mit Unterkante Header und Boden
             if (bounceY <= headerRect.bottom + btnH/2 || bounceY >= height - btnH/2 - uiPadding) {
                 speedY *= -1;
             }
 
-            // Position anwenden
             startBtn.style.left = bounceX + 'px';
             startBtn.style.top = bounceY + 'px';
         }
@@ -208,9 +205,7 @@
         function renderStaticWeb() {
             if (isPlaying || isMobile) return;
             ctx.clearRect(0, 0, width, height);
-            
             updateScreensaver();
-
             let lerpFactor = 0.15;
             currentX += (targetX - currentX) * lerpFactor;
             currentY += (targetY - currentY) * lerpFactor;
