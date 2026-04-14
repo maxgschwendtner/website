@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Max Gschwendtner - Vintage Mode</title>
+    <title>Max Gschwendtner - Vintage Refined</title>
     <style>
         :root {
             --bg-color: #ffffff;
@@ -52,22 +52,24 @@
             background: none; border: none; color: #FFF000; cursor: pointer; pointer-events: auto;
             font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
             padding: 25px 35px; z-index: 11; white-space: nowrap; display: inline-block;
-            transition: color 0.1s ease;
         }
 
+        /* Das gelbe Feld - bleibt jetzt beim Hovern statisch */
         #start-btn::before {
             content: ""; position: absolute; top: 22px; left: 30px; right: 30px; bottom: 22px;
             background: #EAFF00; z-index: -1; border-radius: 2px; display: none;
         }
 
         #start-btn:hover { color: #000; }
-        #start-btn:hover::before { 
-            display: block; 
-            animation: apple-blink 4.5s infinite;
+        #start-btn:hover::before { display: block; }
+
+        /* Der Text blinkt (verschwindet) nach 3 Sekunden */
+        #start-btn:hover span {
+            animation: text-blink 4.5s infinite;
             animation-delay: 3s;
         }
 
-        @keyframes apple-blink {
+        @keyframes text-blink {
             0%, 10%, 20%, 30% { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
             5%, 15%, 25% { opacity: 0; text-decoration: none; }
             33.1%, 100% { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
@@ -79,7 +81,9 @@
         <div class="header" id="main-header"><span>MAX</span><span>GSCHWENDTNER</span></div>
         <div class="footer"><a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a></div>
     </div>
-    <button id="start-btn">UNDER CONSTRUCTION</button>
+    
+    <button id="start-btn"><span>UNDER CONSTRUCTION</span></button>
+    
     <canvas id="gameCanvas"></canvas>
 
     <script>
@@ -91,7 +95,7 @@
         let width, height, dpr;
         const tvSpeed = 1.05; 
         let bounceX, bounceY, speedX = tvSpeed, speedY = tvSpeed; 
-        let mouseX = -500, mouseY = -500;
+        let mouseX = -1000, mouseY = -1000;
         let isHovering = false, hoverStartTime = 0;
 
         function updateTheme() {
@@ -121,9 +125,15 @@
             if (r < 0.33) speedX *= -1;
             else if (r < 0.66) speedY *= -1;
             else { speedX *= -1; speedY *= -1; }
-            speedX = tvSpeed * Math.sign(speedX);
-            speedY = tvSpeed * Math.sign(speedY);
+            normalizeSpeed();
         });
+
+        function normalizeSpeed() {
+            const mag = Math.sqrt(speedX**2 + speedY**2);
+            const target = Math.sqrt(tvSpeed**2 * 2);
+            speedX = (speedX / mag) * target;
+            speedY = (speedY / mag) * target;
+        }
 
         function drawGrid() {
             const timeElapsed = isHovering ? (Date.now() - hoverStartTime) / 1000 : 0;
@@ -146,10 +156,8 @@
 
         function drawCursorCoords() {
             ctx.save();
-            // Koordinaten dezent versetzt zur Mausspitze
             ctx.translate(mouseX + 15, mouseY + 15);
             ctx.font = "400 10px monospace";
-            // Nutzt die CSS Variable für die Textfarbe
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--info-color');
             ctx.textAlign = "left";
             ctx.fillText(`X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`, 0, 10);
@@ -157,21 +165,23 @@
         }
 
         function update() {
+            // Smoother Shove Mechanik
             let dx = bounceX - mouseX;
             let dy = bounceY - mouseY;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
-            if (dist < 90) {
-                speedX += dx * 0.0015;
-                speedY += dy * 0.0015;
+            if (dist < 120) {
+                // Kraft steigt exponentiell an, je näher man kommt
+                const force = Math.pow((120 - dist) / 120, 2) * 0.4;
+                speedX += dx * force;
+                speedY += dy * force;
             }
 
-            const currentTotalSpeed = Math.sqrt(speedX*speedX + speedY*speedY);
-            const targetTotalSpeed = Math.sqrt(tvSpeed*tvSpeed * 2);
-            const ratio = targetTotalSpeed / currentTotalSpeed;
-            
-            speedX *= (1 + (ratio - 1) * 0.05);
-            speedY *= (1 + (ratio - 1) * 0.05);
+            // Ganz sanfte Rückkehr zur TV-Normalgeschwindigkeit
+            const currentMag = Math.sqrt(speedX**2 + speedY**2);
+            const targetMag = Math.sqrt(tvSpeed**2 * 2);
+            speedX += ( (speedX/currentMag * targetMag) - speedX ) * 0.03;
+            speedY += ( (speedY/currentMag * targetMag) - speedY ) * 0.03;
 
             const rect = startBtn.getBoundingClientRect();
             const headerRect = headerEl.getBoundingClientRect();
@@ -179,6 +189,7 @@
             bounceX += speedX;
             bounceY += speedY;
 
+            // Wand-Abprall
             if (bounceX <= rect.width/2 + 20 || bounceX >= width - rect.width/2 - 20) speedX *= -1;
             if (bounceY <= headerRect.bottom + rect.height/2 || bounceY >= height - rect.height/2 - 20) speedY *= -1;
 
