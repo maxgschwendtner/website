@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Max Gschwendtner - Subtle Physics</title>
+    <title>Max Gschwendtner - 3D Flying Construction</title>
     <style>
         :root {
             --bg-color: #ffffff;
             --text-color: #000000;
             --accent-blue: #0000FF;
             --info-color: rgba(0,0,0,0.4);
+            --rotation-x: 0deg;
+            --rotation-y: 0deg;
+            --scale-z: 1;
         }
 
         [data-theme='dark'] {
@@ -25,6 +28,7 @@
             transition: background 2s ease; 
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
             cursor: default; 
+            perspective: 1000px; /* 3D Perspektive für den Body */
         }
 
         canvas { display: block; width: 100%; height: 100%; pointer-events: none; position: absolute; top: 0; left: 0; }
@@ -47,11 +51,18 @@
             transition: color 2s ease;
         }
 
-        #start-btn {
+        /* Container für das 3D fliegende Logo */
+        #under-construction-container {
             position: absolute; top: 0; left: 0;
+            transform-style: preserve-3d;
+            transition: transform 0.1s linear; /* Glatte Transformations-Updates */
+        }
+
+        #start-btn {
             background: none; border: none; color: #FFF000; cursor: pointer; pointer-events: auto;
             font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
             padding: 25px 35px; z-index: 11; white-space: nowrap; display: inline-block;
+            transition: color 0.1s ease;
         }
 
         #start-btn::before {
@@ -81,18 +92,25 @@
         <div class="footer"><a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a></div>
     </div>
     
-    <button id="start-btn"><span>UNDER CONSTRUCTION</span></button>
+    <div id="under-construction-container">
+        <button id="start-btn"><span>UNDER CONSTRUCTION</span></button>
+    </div>
+    
     <canvas id="gameCanvas"></canvas>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const startBtn = document.getElementById('start-btn');
+        const underConstructionContainer = document.getElementById('under-construction-container');
         const headerEl = document.getElementById('main-header');
 
         let width, height, dpr;
         const tvSpeed = 1.05; 
-        let bounceX, bounceY, speedX = tvSpeed, speedY = tvSpeed; 
+        const tvSpeedZ = 0.6; // Geschwindigkeit in der Tiefe
+        let bounceX, bounceY, bounceZ = 0, speedX = tvSpeed, speedY = tvSpeed, speedZ = tvSpeedZ;
+        let rotationX = 0, rotationY = 0, rotationZ = 0;
+        const rotationSpeed = 0.15; // Rotationsgeschwindigkeit
         let mouseX = -2000, mouseY = -2000;
         let isHovering = false, hoverStartTime = 0;
 
@@ -107,7 +125,7 @@
             width = window.innerWidth; height = window.innerHeight;
             canvas.width = width * dpr; canvas.height = height * dpr;
             ctx.scale(dpr, dpr);
-            bounceX = width / 2; bounceY = height / 2;
+            bounceX = width / 2; bounceY = height / 2; bounceZ = 0;
             updateTheme();
         }
 
@@ -119,8 +137,11 @@
         startBtn.addEventListener('mousedown', () => {
             speedX *= -1;
             speedY *= -1;
+            speedZ *= -1; // Richtungsänderung auch in der Tiefe
+            // Kleiner zufälliger Impuls
             speedX += (Math.random() - 0.5) * 0.4;
             speedY += (Math.random() - 0.5) * 0.4;
+            speedZ += (Math.random() - 0.5) * 0.3;
         });
 
         startBtn.addEventListener('mouseenter', () => { 
@@ -161,35 +182,56 @@
         }
 
         function update() {
-            let dx = bounceX - mouseX;
-            let dy = bounceY - mouseY;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-            
-            // SEHR LEICHTE SCHUBS-LOGIK: 
-            if (!isHovering && dist < 120) {
-                const pushStrength = 0.002; // Reduziert für minimalen Widerstand
-                speedX += dx * pushStrength;
-                speedY += dy * pushStrength;
+            // Update 3D Flugpfad und Rotationen
+            bounceX += speedX;
+            bounceY += speedY;
+            bounceZ += speedZ;
+            rotationX += rotationSpeed;
+            rotationY += rotationSpeed * 0.7; // Unregelmäßigere Rotation
+            rotationZ += rotationSpeed * 0.5;
+
+            // Update 3D Transformations-Variablen im CSS
+            underConstructionContainer.style.setProperty('--rotation-x', `${rotationX}deg`);
+            underConstructionContainer.style.setProperty('--rotation-y', `${rotationY}deg`);
+            const scaleZ = 1 + (bounceZ / 200) * 0.5; // Skalierung basierend auf der Tiefe
+            underConstructionContainer.style.setProperty('--scale-z', scaleZ);
+
+            // Anwenden der 3D-Transformationen auf den Container
+            const transform = `translate3d(${bounceX}px, ${bounceY}px, ${bounceZ}px) rotateX(${rotationX}deg) rotateY(${rotationY}deg) scale(${scaleZ})`;
+            underConstructionContainer.style.transform = transform;
+
+            // Berechnen der projizierten 2D-Position und Bounding Box für Interaktionen
+            const rect = startBtn.getBoundingClientRect();
+            const projectedX = rect.left + rect.width / 2;
+            const projectedY = rect.top + rect.height / 2;
+            let dxCoords = projectedX - mouseX;
+            let dyCoords = projectedY - mouseY;
+            let distCoords = Math.sqrt(dxCoords * dxCoords + dyCoords * dyCoords);
+
+            // SEHR LEICHTE SCHUBS-LOGIK: Basierend auf der projizierten 2D-Entfernung
+            if (!isHovering && distCoords < 120) {
+                const pushStrength = 0.002; 
+                speedX += dxCoords * pushStrength;
+                speedY += dyCoords * pushStrength;
+                speedZ += (dxCoords * pushStrength) * (dyCoords * pushStrength) * 0.01; // Kleiner Effekt auf Z
             }
 
-            // Sanfte Rückkehr zur Vintage-TV-Geschwindigkeit
-            const targetMag = Math.sqrt(tvSpeed**2 * 2);
-            const currentMag = Math.sqrt(speedX**2 + speedY**2);
+            // Sanfte Rückkehr zur Vintage-TV-Geschwindigkeit (auch in der Tiefe)
+            const targetMag = Math.sqrt(tvSpeed**2 * 2 + tvSpeedZ**2);
+            const currentMag = Math.sqrt(speedX**2 + speedY**2 + speedZ**2);
             
             speedX += ((speedX / currentMag * targetMag) - speedX) * 0.03;
             speedY += ((speedY / currentMag * targetMag) - speedY) * 0.03;
+            speedZ += ((speedZ / currentMag * targetMag) - speedZ) * 0.02; // Etwas langsamere Rückkehr in Z
 
-            const rect = startBtn.getBoundingClientRect();
             const headerRect = headerEl.getBoundingClientRect();
             
-            bounceX += speedX;
-            bounceY += speedY;
-
+            // Wand-Abprall an den 2D-Rändern
             if (bounceX <= rect.width/2 + 20 || bounceX >= width - rect.width/2 - 20) speedX *= -1;
             if (bounceY <= headerRect.bottom + rect.height/2 || bounceY >= height - rect.height/2 - 20) speedY *= -1;
 
-            startBtn.style.left = (bounceX - rect.width/2) + 'px';
-            startBtn.style.top = (bounceY - rect.height/2) + 'px';
+            // Abprall an fiktiven Z-Ebenen (nach vorne und hinten)
+            if (bounceZ <= -100 || bounceZ >= 100) speedZ *= -1;
         }
 
         function loop() {
