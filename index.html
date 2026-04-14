@@ -3,83 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Max Gschwendtner</title>
+    <title>Max Gschwendtner - GR Shift</title>
     <style>
         body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-        canvas { display: block; touch-action: none; width: 100%; height: 100%; cursor: default; }
-        
-        #ui { 
-            position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; 
-            display: flex; flex-direction: column; justify-content: space-between; 
-            height: 100vh; padding: 30px; box-sizing: border-box; z-index: 10; 
-        }
-
-        .header { 
-            display: flex; flex-direction: column; text-align: left; 
-            font-size: 32px; font-weight: 900; line-height: 0.9; 
-            letter-spacing: -1.5px; color: #000; text-transform: uppercase; 
-            pointer-events: auto; 
-        }
-
+        canvas { display: block; width: 100%; height: 100%; cursor: default; }
+        #ui { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; padding: 30px; box-sizing: border-box; z-index: 10; }
+        .header { display: flex; flex-direction: column; text-align: left; font-size: 32px; font-weight: 900; line-height: 0.9; letter-spacing: -1.5px; color: #000; text-transform: uppercase; pointer-events: auto; }
         @media (min-width: 769px) { .header { flex-direction: row; gap: 12px; } }
-
         .footer { text-align: right; font-size: 15px; pointer-events: auto; }
-        .footer a { 
-            color: #0000FF; text-decoration: none; 
-            font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, sans-serif; 
-            font-weight: 100; letter-spacing: 0.5px; -webkit-font-smoothing: antialiased; 
-        }
+        .footer a { color: #0000FF; text-decoration: none; font-weight: 100; letter-spacing: 0.5px; }
 
-        /* Under Construction Button */
         #start-btn {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: none; border: none; color: #FFF000; cursor: pointer; pointer-events: auto;
             font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
             padding: 25px 35px; z-index: 11; white-space: nowrap; display: inline-block;
-            text-decoration: none; transition: color 0.05s ease, opacity 0.1s ease;
-            -webkit-tap-highlight-color: transparent;
+            transition: color 0.05s ease; -webkit-tap-highlight-color: transparent;
         }
 
-        /* Der Textmarker-Effekt */
         #start-btn::before {
-            content: ""; position: absolute; 
-            top: 22px; left: 30px; right: 30px; bottom: 22px;
-            background: #EAFF00; z-index: -1; border-radius: 2px; 
-            display: none;
-            opacity: 1;
+            content: ""; position: absolute; top: 22px; left: 30px; right: 30px; bottom: 22px;
+            background: #EAFF00; z-index: -1; border-radius: 2px; display: none;
         }
 
-        #start-btn:hover { 
-            color: #000; 
-            text-decoration: underline; 
-            text-underline-offset: 3px; 
-            text-decoration-color: #000; 
-        }
-
+        #start-btn:hover { color: #000; }
+        
         #start-btn:hover::before { 
             display: block; 
-            /* Startet die Blink-Animation erst nach 0.5s Verharren */
             animation: apple-blink 4.5s infinite;
-            animation-delay: 0.5s; 
+            animation-delay: 3s;
         }
 
-        /* Blink-Logik (3x Blinken, dann Pause) */
+        /* Unterstreichung erst beim Blinken aktiv */
         @keyframes apple-blink {
-            0%, 10%, 20%, 30% { opacity: 1; }
-            5%, 15%, 25% { opacity: 0; }
-            33.1%, 100% { opacity: 1; }
+            0%, 10%, 20%, 30% { opacity: 1; text-decoration: underline; }
+            5%, 15%, 25% { opacity: 0; text-decoration: none; }
+            33.1%, 100% { opacity: 1; text-decoration: underline; }
         }
-
-        @media (min-width: 769px) { #start-btn { cursor: default; } }
     </style>
 </head>
 <body>
-
     <div id="ui">
         <div class="header" id="main-header"><span>MAX</span><span>GSCHWENDTNER</span></div>
         <div class="footer"><a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a></div>
     </div>
-
     <button id="start-btn">UNDER CONSTRUCTION</button>
     <canvas id="gameCanvas"></canvas>
 
@@ -89,72 +56,97 @@
         const startBtn = document.getElementById('start-btn');
         const headerEl = document.getElementById('main-header');
 
-        let width, height, dpr, isPlaying = false, bounceX, bounceY, speedX, speedY;
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        let width, height, dpr, bounceX, bounceY, speedX = 1.6, speedY = 1.6;
+        let mouseX = -1000, mouseY = -1000, isHovering = false, hoverStartTime = 0;
+        let compassAngle = 0;
 
         function init() {
             dpr = window.devicePixelRatio || 1;
             width = window.innerWidth; height = window.innerHeight;
             canvas.width = width * dpr; canvas.height = height * dpr;
             ctx.scale(dpr, dpr);
+            bounceX = width / 2; bounceY = height / 2;
+        }
 
-            if (!isMobile) {
-                bounceX = width / 2; bounceY = height / 2;
-                speedX = 1.6; speedY = 1.6;
-                requestAnimationFrame(renderScreensaver);
+        window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+        startBtn.addEventListener('mouseenter', () => { isHovering = true; hoverStartTime = Date.now(); });
+        startBtn.addEventListener('mouseleave', () => { isHovering = false; });
+        
+        startBtn.addEventListener('mousedown', () => {
+            speedX *= (Math.random() > 0.5 ? -1 : 1);
+            speedY *= (Math.random() > 0.5 ? -1 : 1);
+            if(Math.random() > 0.5) speedX *= -1; else speedY *= -1;
+        });
+
+        function drawGrid() {
+            const timeElapsed = isHovering ? (Date.now() - hoverStartTime) / 1000 : 0;
+            const useGR = timeElapsed > 3; // Shift nach 3 Sek
+            
+            ctx.fillStyle = "rgba(0,0,0,0.15)";
+            const spacing = 40;
+            for (let x = 0; x <= width; x += spacing) {
+                for (let y = 0; y <= height; y += spacing) {
+                    let drawX = x;
+                    let drawY = y;
+                    if (useGR) {
+                        drawX += Math.sin(x * 1.618) * 5;
+                        drawY += Math.cos(y * 1.618) * 5;
+                    }
+                    ctx.beginPath(); ctx.arc(drawX, drawY, 0.7, 0, Math.PI * 2); ctx.fill();
+                }
             }
         }
 
-        function pushButton() {
-            const rand = Math.random();
-            if (rand < 0.33) speedX *= -1; 
-            else if (rand < 0.66) speedY *= -1; 
-            else { speedX *= -1; speedY *= -1; }
+        function drawUIElements() {
+            const targetAngle = Math.atan2(speedY, speedX);
+            compassAngle += (targetAngle - compassAngle) * 0.1;
+
+            ctx.save();
+            ctx.translate(bounceX, bounceY + 35);
+            ctx.font = "400 10px monospace";
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.textAlign = "center";
+            ctx.fillText(`X:${Math.round(bounceX)} Y:${Math.round(bounceY)}`, 0, 0);
             
-            const kick = 0.9 + Math.random() * 0.4;
-            speedX *= kick; speedY *= kick;
-            const min = 1.2, max = 3.5;
-            if (Math.abs(speedX) < min) speedX = min * Math.sign(speedX);
-            if (Math.abs(speedX) > max) speedX = max * Math.sign(speedX);
-            if (Math.abs(speedY) < min) speedY = min * Math.sign(speedY);
-            if (Math.abs(speedY) > max) speedY = max * Math.sign(speedY);
+            // Kompassnadel
+            ctx.translate(45, -3);
+            ctx.rotate(compassAngle);
+            ctx.beginPath();
+            ctx.moveTo(5, 0); ctx.lineTo(-3, -3); ctx.lineTo(-3, 3); ctx.closePath();
+            ctx.fillStyle = "#000"; ctx.fill();
+            ctx.restore();
         }
 
-        startBtn.addEventListener('mousedown', (e) => {
-            if (!isMobile) pushButton();
-        });
+        function update() {
+            // Gravity/Fleeing Effekt
+            let dx = bounceX - mouseX;
+            let dy = bounceY - mouseY;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 120) {
+                speedX += dx * 0.005;
+                speedY += dy * 0.005;
+            }
 
-        function updatePhysics() {
-            if (isPlaying || isMobile) return;
             const rect = startBtn.getBoundingClientRect();
-            const headerRect = headerEl.getBoundingClientRect();
-            const uiPadding = 30;
-
-            bounceX += speedX;
-            bounceY += speedY;
-
-            if (bounceX <= rect.width/2 + uiPadding || bounceX >= width - rect.width/2 - uiPadding) speedX *= -1;
-            if (bounceY <= headerRect.bottom + rect.height/2 || bounceY >= height - rect.height/2 - uiPadding) speedY *= -1;
+            bounceX += speedX; bounceY += speedY;
+            
+            if (bounceX <= rect.width/2 + 30 || bounceX >= width - rect.width/2 - 30) speedX *= -1;
+            if (bounceY <= 100 || bounceY >= height - 40) speedY *= -1;
 
             startBtn.style.left = bounceX + 'px';
             startBtn.style.top = bounceY + 'px';
         }
 
-        function renderScreensaver() {
-            if (isPlaying) return;
+        function loop() {
             ctx.clearRect(0, 0, width, height);
-            ctx.fillStyle = "rgba(0,0,0,0.05)";
-            for (let x = 0; x <= width; x += 40) {
-                for (let y = 0; y <= height; y += 40) {
-                    ctx.beginPath(); ctx.arc(x, y, 0.5, 0, Math.PI * 2); ctx.fill();
-                }
-            }
-            updatePhysics();
-            requestAnimationFrame(renderScreensaver);
+            drawGrid();
+            update();
+            drawUIElements();
+            requestAnimationFrame(loop);
         }
 
         window.addEventListener('resize', init);
-        init();
+        init(); loop();
     </script>
 </body>
 </html>
