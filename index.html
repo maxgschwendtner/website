@@ -30,7 +30,7 @@
             font-weight: 100; letter-spacing: 0.5px; -webkit-font-smoothing: antialiased; 
         }
 
-        /* Button mit großer Hitbox für einfaches "Anstupsen" */
+        /* Under Construction Button */
         #start-btn {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: none; border: none; color: #FFF000; cursor: pointer; pointer-events: auto;
@@ -40,18 +40,35 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Der Textmarker-Effekt (Hinterstreichung) */
+        /* Der Textmarker-Effekt */
         #start-btn::before {
             content: ""; position: absolute; 
             top: 22px; left: 30px; right: 30px; bottom: 22px;
-            background: #EAFF00; z-index: -1; border-radius: 2px; display: none;
+            background: #EAFF00; z-index: -1; border-radius: 2px; 
+            display: none;
+            opacity: 1;
         }
 
         #start-btn:hover { 
-            color: #000; text-decoration: underline; 
-            text-underline-offset: 3px; text-decoration-color: #000; 
+            color: #000; 
+            text-decoration: underline; 
+            text-underline-offset: 3px; 
+            text-decoration-color: #000; 
         }
-        #start-btn:hover::before { display: block; }
+
+        #start-btn:hover::before { 
+            display: block; 
+            /* Startet die Blink-Animation erst nach 0.5s Verharren */
+            animation: apple-blink 4.5s infinite;
+            animation-delay: 0.5s; 
+        }
+
+        /* Blink-Logik (3x Blinken, dann Pause) */
+        @keyframes apple-blink {
+            0%, 10%, 20%, 30% { opacity: 1; }
+            5%, 15%, 25% { opacity: 0; }
+            33.1%, 100% { opacity: 1; }
+        }
 
         @media (min-width: 769px) { #start-btn { cursor: default; } }
     </style>
@@ -85,28 +102,17 @@
                 bounceX = width / 2; bounceY = height / 2;
                 speedX = 1.6; speedY = 1.6;
                 requestAnimationFrame(renderScreensaver);
-            } else {
-                startBtn.style.top = '50%'; startBtn.style.left = '50%';
             }
         }
 
-        // Die neue "Stupser"-Logik für Richtungswechsel
         function pushButton() {
             const rand = Math.random();
+            if (rand < 0.33) speedX *= -1; 
+            else if (rand < 0.66) speedY *= -1; 
+            else { speedX *= -1; speedY *= -1; }
             
-            if (rand < 0.33) {
-                speedX *= -1; // Nur X spiegeln (~90 Grad Änderung der Bahn)
-            } else if (rand < 0.66) {
-                speedY *= -1; // Nur Y spiegeln (~90 Grad Änderung der Bahn)
-            } else {
-                speedX *= -1; speedY *= -1; // Beide spiegeln (180 Grad Rückflug)
-            }
-
-            // Kleiner Zufalls-Kick für die Geschwindigkeit
             const kick = 0.9 + Math.random() * 0.4;
             speedX *= kick; speedY *= kick;
-
-            // Speed-Limit, damit er nicht wegrast oder stehenbleibt
             const min = 1.2, max = 3.5;
             if (Math.abs(speedX) < min) speedX = min * Math.sign(speedX);
             if (Math.abs(speedX) > max) speedX = max * Math.sign(speedX);
@@ -115,16 +121,7 @@
         }
 
         startBtn.addEventListener('mousedown', (e) => {
-            if (!isMobile) {
-                pushButton();
-            } else {
-                startBtn.style.opacity = '0';
-                setTimeout(() => { 
-                    isPlaying = true; 
-                    startBtn.style.display = 'none'; 
-                    // Hier würde die initGame() Logik folgen
-                }, 200);
-            }
+            if (!isMobile) pushButton();
         });
 
         function updatePhysics() {
@@ -136,7 +133,6 @@
             bounceX += speedX;
             bounceY += speedY;
 
-            // Wand-Kollisionen (Abprallen)
             if (bounceX <= rect.width/2 + uiPadding || bounceX >= width - rect.width/2 - uiPadding) speedX *= -1;
             if (bounceY <= headerRect.bottom + rect.height/2 || bounceY >= height - rect.height/2 - uiPadding) speedY *= -1;
 
@@ -147,15 +143,12 @@
         function renderScreensaver() {
             if (isPlaying) return;
             ctx.clearRect(0, 0, width, height);
-            
-            // Simpler Grid-Hintergrund
             ctx.fillStyle = "rgba(0,0,0,0.05)";
             for (let x = 0; x <= width; x += 40) {
                 for (let y = 0; y <= height; y += 40) {
                     ctx.beginPath(); ctx.arc(x, y, 0.5, 0, Math.PI * 2); ctx.fill();
                 }
             }
-
             updatePhysics();
             requestAnimationFrame(renderScreensaver);
         }
