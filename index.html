@@ -6,112 +6,36 @@
     <title>Max Gschwendtner</title>
     <style>
         body, html { margin: 0; padding: 0; overflow: hidden; background: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-        
-        canvas { 
-            display: block; 
-            touch-action: none; 
-            width: 100%; 
-            height: 100%; 
-            cursor: default;
-        }
+        canvas { display: block; touch-action: none; width: 100%; height: 100%; cursor: default; }
+        #ui { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; padding: 30px; box-sizing: border-box; z-index: 10; }
+        .header { display: flex; flex-direction: column; text-align: left; font-size: 32px; font-weight: 900; line-height: 0.9; letter-spacing: -1.5px; color: #000; text-transform: uppercase; pointer-events: auto; }
+        @media (min-width: 769px) { .header { flex-direction: row; gap: 12px; } }
+        .footer { text-align: right; font-size: 15px; pointer-events: auto; }
+        .footer a { color: #0000FF; text-decoration: none; font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 100; letter-spacing: 0.5px; -webkit-font-smoothing: antialiased; }
 
-        #ui {
-            position: absolute; width: 100%; top: 0; left: 0; pointer-events: none;
-            display: flex; flex-direction: column; justify-content: space-between; height: 100vh;
-            padding: 30px; box-sizing: border-box; z-index: 10;
-        }
-
-        .header { 
-            display: flex;
-            flex-direction: column;
-            text-align: left; 
-            font-size: 32px; 
-            font-weight: 900; 
-            line-height: 0.9; 
-            letter-spacing: -1.5px; 
-            color: #000; 
-            text-transform: uppercase;
-            pointer-events: auto; 
-        }
-
-        @media (min-width: 769px) {
-            .header { flex-direction: row; gap: 12px; }
-        }
-
-        /* Mail in extrem feiner Schrift */
-        .footer { 
-            text-align: right; 
-            font-size: 15px; 
-            pointer-events: auto; 
-        }
-        .footer a { 
-            color: #0000FF; 
-            text-decoration: none; 
-            font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, sans-serif;
-            font-weight: 100;
-            letter-spacing: 0.5px;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* Under Construction Button */
         #start-btn {
-            position: absolute; 
-            top: 50%; left: 50%; 
-            transform: translate(-50%, -50%);
-            background: none; border: none; 
-            color: #FFF000; 
-            cursor: pointer; pointer-events: auto;
-            font-size: 14px; 
-            font-weight: bold; 
-            letter-spacing: 2px; 
-            text-transform: uppercase;
-            padding: 2px 4px;
-            z-index: 11;
-            white-space: nowrap;
-            margin: 0;
-            display: inline-block;
-            text-decoration: none;
-            /* Schnelle Farbumschaltung */
-            transition: color 0.05s ease, opacity 0.1s ease;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: none; border: none; color: #FFF000; cursor: pointer; pointer-events: auto;
+            font-size: 14px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;
+            padding: 20px 30px; z-index: 11; white-space: nowrap; display: inline-block;
+            text-decoration: none; transition: color 0.05s ease, opacity 0.1s ease;
         }
 
-        /* Der Apple-Style Marker (Instant) */
         #start-btn::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #EAFF00; /* Neongelb Markierung */
-            z-index: -1;
-            border-radius: 2px;
-            display: none;
+            content: ""; position: absolute; top: 18px; left: 25px; right: 25px; bottom: 18px;
+            background: #EAFF00; z-index: -1; border-radius: 2px; display: none;
         }
 
-        #start-btn:hover {
-            color: #000000; /* Schwarze Schrift auf Gelb */
-            text-decoration: underline;
-            text-underline-offset: 3px;
-            text-decoration-thickness: 1px;
-            text-decoration-color: #000000;
-        }
-
-        #start-btn:hover::before {
-            display: block; /* Sofort da */
-        }
-
+        #start-btn:hover { color: #000; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #000; }
+        #start-btn:hover::before { display: block; }
         @media (min-width: 769px) { #start-btn { cursor: default; } }
     </style>
 </head>
 <body>
-
     <div id="ui">
-        <div class="header" id="main-header">
-            <span>MAX</span>
-            <span>GSCHWENDTNER</span>
-        </div>
+        <div class="header" id="main-header"><span>MAX</span><span>GSCHWENDTNER</span></div>
         <div class="footer"><a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a></div>
     </div>
-
     <button id="start-btn">UNDER CONSTRUCTION</button>
     <canvas id="gameCanvas"></canvas>
 
@@ -122,182 +46,64 @@
         const headerEl = document.getElementById('main-header');
 
         let width, height, dpr, player, platforms = [], enemies = [], gravity = 0.3, jumpStrength = -9;
-        let tilt = 0, isPlaying = false, goldenRatio, totalHeight = 0; 
-        
-        let targetX = -100, targetY = -100, currentX = -100, currentY = -100;
-        let bounceX, bounceY, speedX, speedY;
-        
+        let isPlaying = false, totalHeight = 0, bounceX, bounceY, speedX, speedY;
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         function init() {
             dpr = window.devicePixelRatio || 1;
-            width = window.innerWidth;
-            height = window.innerHeight;
-            canvas.width = width * dpr;
-            canvas.height = height * dpr;
+            width = window.innerWidth; height = window.innerHeight;
+            canvas.width = width * dpr; canvas.height = height * dpr;
             ctx.scale(dpr, dpr);
-            ctx.textBaseline = 'middle';
-            platforms = []; enemies = []; totalHeight = 0; player = null;
-
             if (!isMobile) {
                 const headerRect = headerEl.getBoundingClientRect();
-                const startMargin = 100;
-                bounceX = startMargin + Math.random() * (width - startMargin*2);
-                bounceY = headerRect.bottom + startMargin + Math.random() * (height - headerRect.bottom - startMargin*2);
-                
-                // Initialer Startwert
-                speedX = (Math.random() > 0.5 ? 1.5 : -1.5);
-                speedY = (Math.random() > 0.5 ? 1.5 : -1.5);
-                
+                bounceX = width / 2; bounceY = height / 2;
+                speedX = 1.8; speedY = 1.8;
                 requestAnimationFrame(renderStaticWeb);
-            } else {
-                startBtn.style.top = '50%';
-                startBtn.style.left = '50%';
-                startBtn.style.transform = 'translate(-50%, -50%)';
             }
         }
 
-        // Logik für den Richtungswechsel: Zwingend entgegengesetzt
-        function redirectOnBounce() {
-            // Richtung umkehren
-            speedX = -speedX;
-            speedY = -speedY;
+        function pushButton() {
+            // Invertiert die Richtung und gibt einen kleinen Speed-Kick
+            speedX = -speedX * (1 + (Math.random() * 0.2));
+            speedY = -speedY * (1 + (Math.random() * 0.2));
             
-            // Kleiner Jitter (Zufallsfaktor), damit der Winkel variiert
-            const jitterX = 0.8 + Math.random() * 0.6;
-            const jitterY = 0.8 + Math.random() * 0.6;
-            speedX *= jitterX;
-            speedY *= jitterY;
-
-            // Speed Limitierung (nicht zu langsam, nicht zu schnell)
-            const maxS = 2.5; const minS = 1.0;
-            if (Math.abs(speedX) > maxS) speedX = maxS * Math.sign(speedX);
-            if (Math.abs(speedX) < minS) speedX = minS * Math.sign(speedX);
-            if (Math.abs(speedY) > maxS) speedY = maxS * Math.sign(speedY);
-            if (Math.abs(speedY) < minS) speedY = minS * Math.sign(speedY);
+            // Limitierung, damit er nicht zu schnell wird
+            const max = 4;
+            if (Math.abs(speedX) > max) speedX = max * Math.sign(speedX);
+            if (Math.abs(speedY) > max) speedY = max * Math.sign(speedY);
         }
 
-        window.addEventListener('mousemove', (e) => {
-            if (!isMobile) { targetX = e.clientX; targetY = e.clientY; }
-        });
-
-        startBtn.addEventListener('click', (e) => {
+        startBtn.addEventListener('mousedown', (e) => {
             if (!isMobile) {
-                // Auf Desktop: Nur wegstoßen
-                redirectOnBounce();
+                pushButton();
             } else {
-                // Auf Mobile: Spiel starten
                 startBtn.style.opacity = '0';
-                setTimeout(() => {
-                    startBtn.style.display = 'none';
-                    startBtn.style.opacity = '1';
-                    startGame();
-                }, 200);
+                setTimeout(() => { isPlaying = true; startBtn.style.display = 'none'; initGame(); }, 200);
             }
         });
-
-        function startGame() {
-            isPlaying = true;
-            goldenRatio = height * 0.618; 
-            player = { x: width / 2, y: height * 0.2, vx: 0, vy: 0 };
-            window.addEventListener('deviceorientation', (e) => tilt = e.gamma);
-            animate();
-        }
-
-        function drawGrid(yOffset = 0) {
-            ctx.fillStyle = "rgba(0,0,0,0.05)";
-            const gridSize = 40;
-            const offset = yOffset % gridSize;
-            for (let x = 0; x <= width; x += gridSize) {
-                for (let y = offset; y <= height; y += gridSize) {
-                    ctx.beginPath(); ctx.arc(x, y, 0.5, 0, Math.PI * 2); ctx.fill();
-                }
-            }
-        }
-
-        function drawCoords(x, y, labelY) {
-            ctx.font = "400 11px monospace";
-            ctx.fillStyle = "rgba(0,0,0,0.6)";
-            ctx.textAlign = 'center';
-            ctx.fillText(`X:${Math.round(x)} Y:${Math.round(labelY)}`, x, y + 25);
-        }
 
         function updateScreensaver() {
             if (isPlaying || isMobile) return;
             const rect = startBtn.getBoundingClientRect();
             const headerRect = headerEl.getBoundingClientRect();
-            const btnW = rect.width, btnH = rect.height, uiPadding = 30;
+            const uiPadding = 30;
             
             bounceX += speedX;
             bounceY += speedY;
 
-            // Wand-Kollisionen
-            if (bounceX <= btnW/2 + uiPadding || bounceX >= width - btnW/2 - uiPadding) speedX *= -1;
-            if (bounceY <= headerRect.bottom + btnH/2 || bounceY >= height - btnH/2 - uiPadding) speedY *= -1;
+            if (bounceX <= rect.width/2 + uiPadding || bounceX >= width - rect.width/2 - uiPadding) speedX *= -1;
+            if (bounceY <= headerRect.bottom + rect.height/2 || bounceY >= height - rect.height/2 - uiPadding) speedY *= -1;
             
             startBtn.style.left = bounceX + 'px';
             startBtn.style.top = bounceY + 'px';
         }
 
         function renderStaticWeb() {
-            if (isPlaying || isMobile) return;
+            if (isPlaying) return;
             ctx.clearRect(0, 0, width, height);
             updateScreensaver();
-            currentX += (targetX - currentX) * 0.15;
-            currentY += (targetY - currentY) * 0.15;
-            drawGrid(0);
-            drawCoords(currentX, currentY, currentY);
             requestAnimationFrame(renderStaticWeb);
         }
-
-        function animate() {
-            if(!isPlaying) return;
-            ctx.clearRect(0, 0, width, height);
-            drawGrid(totalHeight);
-            player.vx = tilt * 0.75; player.vy += gravity;
-            player.x += player.vx; player.y += player.vy;
-            if (player.x < 0) player.x = width; if (player.x > width) player.x = 0;
-            if (player.y < goldenRatio) {
-                let diff = goldenRatio - player.y;
-                player.y = goldenRatio;
-                totalHeight += diff;
-                platforms.forEach(p => p.y += diff);
-                enemies.forEach(e => e.y += diff);
-            }
-            if (totalHeight > 600 && Math.random() < 0.02) {
-                enemies.push({ x: Math.random() < 0.5 ? -25 : width + 25, y: Math.random() * (height * 0.75), vx: (Math.random() * 2 + 2) * (Math.random() < 0.5 ? 1 : -1), radius: 4.5 });
-            }
-            ctx.fillStyle = '#000';
-            platforms.forEach(p => {
-                ctx.fillRect(p.x, p.y, p.w, 0.5);
-                if (player.vy > 0 && player.x > p.x - 20 && player.x < p.x + p.w + 20 && player.y > p.y - 5 && player.y < p.y + 10) player.vy = jumpStrength;
-            });
-            enemies.forEach(e => {
-                e.x += e.vx; ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2); ctx.fill();
-                let dx = player.x - e.x, dy = player.y - e.y;
-                if (Math.sqrt(dx*dx + dy*dy) < 15) {
-                    if (player.vy > 0 && player.y < e.y) player.vy = jumpStrength; 
-                    else resetToUnderConstruction();
-                }
-            });
-            platforms = platforms.filter(p => p.y < height);
-            enemies = enemies.filter(e => e.x > -60 && e.x < width + 60 && e.y < height);
-            drawCoords(player.x, player.y, totalHeight);
-            if (player.y > height + 100) resetToUnderConstruction();
-            else requestAnimationFrame(animate);
-        }
-
-        function resetToUnderConstruction() {
-            isPlaying = false;
-            startBtn.style.display = 'block';
-            init();
-        }
-
-        window.addEventListener('touchstart', (e) => {
-            if(!isPlaying || !isMobile) return;
-            const y = e.touches[0].clientY;
-            if (!platforms.some(p => Math.abs(p.y - y) < 35)) platforms.push({ x: e.touches[0].clientX - 25, y: y, w: 50, h: 0.5 });
-        });
 
         window.addEventListener('resize', init);
         init();
