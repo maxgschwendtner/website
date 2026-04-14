@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Max Gschwendtner - Architectural Precision</title>
+    <title>Max Gschwendtner</title>
     <style>
         :root {
             --bg-color: #ffffff;
@@ -24,79 +24,52 @@
         body, html { 
             margin: 0; padding: 0; overflow: hidden; 
             background: var(--bg-color); 
-            transition: background 1.2s cubic-bezier(0.4, 0, 0.2, 1); 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            cursor: default; 
+            transition: background 0.8s ease; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            text-rendering: geometricPrecision;
         }
 
         canvas { 
-            display: block; width: 100%; height: 100%; 
-            pointer-events: none; position: absolute; 
-            top: 0; left: 0; z-index: 1;
+            display: block; position: absolute; top: 0; left: 0; 
+            z-index: 1; pointer-events: none; 
         }
         
         #ui { 
-            position: absolute; width: 100%; height: 100vh; 
-            top: 0; left: 0; pointer-events: none; 
-            display: flex; flex-direction: column; 
-            justify-content: space-between; 
-            padding: 30px 35px; 
-            box-sizing: border-box; 
-            z-index: 10;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh; 
+            pointer-events: none; z-index: 100; 
+            display: flex; flex-direction: column; justify-content: space-between; 
+            padding: 30px 35px; box-sizing: border-box;
         }
         
-        .nav-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            width: 100%;
-            pointer-events: none;
+        .nav-top { 
+            display: flex; justify-content: space-between; align-items: flex-start; 
+            width: 100%; pointer-events: none;
         }
 
-        /* Statischer Header: Bleibt immer oben links */
         .header { 
-            display: flex; flex-direction: column; text-align: left; 
+            display: flex; flex-direction: column; 
             font-size: 34px; font-weight: 800; line-height: 0.82; 
-            letter-spacing: -2.1px; 
-            color: var(--text-color); text-transform: uppercase; 
-            pointer-events: auto; 
-            width: fit-content;
+            letter-spacing: -2.1px; color: var(--text-color); 
+            text-transform: uppercase; pointer-events: auto;
         }
         @media (min-width: 769px) { .header { flex-direction: row; gap: 10px; } }
 
-        /* Minimalistischer Theme-Toggle Kreis (12px) */
+        /* Statischer Theme-Toggle Kreis */
         #theme-toggle {
-            width: 12px;
-            height: 12px;
-            border: 1.2px solid var(--circle-color);
-            border-radius: 50%;
-            cursor: pointer;
-            pointer-events: auto;
-            transition: border-color 1.2s ease, transform 0.2s ease;
-            margin-top: 6px;
+            width: 12px; height: 12px; border: 1.2px solid var(--circle-color);
+            border-radius: 50%; cursor: pointer; pointer-events: auto; 
+            margin-top: 6px; transition: transform 0.2s ease;
         }
-        #theme-toggle:hover {
-            transform: scale(1.15);
-        }
+        #theme-toggle:hover { transform: scale(1.2); }
         
         .footer { text-align: right; font-size: 14px; pointer-events: auto; }
-        .footer a { 
-            color: var(--accent-blue); 
-            text-decoration: none; 
-            font-weight: 600; 
-            transition: color 1.2s ease;
-        }
+        .footer a { color: var(--accent-blue); text-decoration: none; font-weight: 600; }
 
-        /* Der flüchtende Button */
         #start-btn {
-            position: absolute; top: 0; left: 0;
-            background: none; border: none; color: #FFF000; cursor: pointer; pointer-events: auto;
+            position: absolute; z-index: 50;
+            background: none; border: none; color: #FFF000; cursor: pointer; 
             font-size: 13px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase;
-            padding: 25px 35px; z-index: 11; white-space: nowrap; display: inline-block;
-            will-change: left, top;
+            padding: 25px 35px; white-space: nowrap; will-change: transform;
         }
 
         #start-btn::before {
@@ -109,12 +82,17 @@
     </style>
 </head>
 <body>
+
     <div id="ui">
         <div class="nav-top">
-            <div class="header" id="main-header"><span>MAX</span><span>GSCHWENDTNER</span></div>
-            <div id="theme-toggle" title="Farbmodus wechseln"></div>
+            <div class="header" id="main-header">
+                <span>MAX</span><span>GSCHWENDTNER</span>
+            </div>
+            <div id="theme-toggle"></div>
         </div>
-        <div class="footer"><a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a></div>
+        <div class="footer">
+            <a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a>
+        </div>
     </div>
     
     <button id="start-btn"><span>UNDER CONSTRUCTION</span></button>
@@ -128,26 +106,15 @@
         const themeToggle = document.getElementById('theme-toggle');
 
         let width, height, dpr;
-        const tvSpeed = 1.05; 
-        let bounceX, bounceY, speedX = tvSpeed, speedY = tvSpeed; 
-        let mouseX = -2000, mouseY = -2000;
-        let isHovering = false;
-        let pushLock = false; 
+        const baseSpeed = 1.05; 
+        let bounceX, bounceY, speedX = baseSpeed, speedY = baseSpeed; 
+        let mouseX = -1000, mouseY = -1000;
+        let isHovering = false, pushLock = false;
 
-        // Manueller Theme-Switch per Klick auf den Kreis
         themeToggle.addEventListener('click', () => {
-            const currentTheme = document.body.getAttribute('data-theme');
-            document.body.setAttribute('data-theme', currentTheme === 'dark' ? 'light' : 'dark');
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
         });
-
-        // Erkennt Initial-Modus (Uhrzeit), aber erlaubt manuelle Steuerung
-        function setInitialTheme() {
-            if (!document.body.hasAttribute('data-theme')) {
-                const hour = new Date().getHours();
-                const isNight = hour >= 18 || hour < 6;
-                document.body.setAttribute('data-theme', isNight ? 'dark' : 'light');
-            }
-        }
 
         function init() {
             dpr = window.devicePixelRatio || 1;
@@ -156,83 +123,70 @@
             ctx.scale(dpr, dpr);
             
             const hRect = headerEl.getBoundingClientRect();
-            bounceX = width / 2; 
-            bounceY = hRect.bottom + 150; // Startet sicher unter dem Namen
+            bounceX = width / 2;
+            bounceY = hRect.bottom + 200;
         }
 
-        window.addEventListener('mousemove', (e) => { 
-            mouseX = e.clientX; mouseY = e.clientY; 
-        });
+        window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
 
-        // Die 33/33/33 Klick-Logik
         startBtn.addEventListener('mousedown', () => {
             const r = Math.random();
-            const boost = 1.4;
-            if (r < 0.33) { 
-                speedX *= -boost; speedY *= -boost; 
-            } else if (r < 0.66) { 
-                let t = speedX; speedX = -speedY * boost; speedY = t * boost; 
-            } else { 
-                let t = speedX; speedX = speedY * boost; speedY = -t * boost; 
-            }
+            if (r < 0.33) { speedX *= -1.5; speedY *= -1.5; } 
+            else if (r < 0.66) { let t = speedX; speedX = -speedY * 1.5; speedY = t * 1.5; } 
+            else { let t = speedX; speedX = speedY * 1.5; speedY = -t * 1.5; }
             pushLock = true;
-            setTimeout(() => { pushLock = false; }, 750); 
+            setTimeout(() => pushLock = false, 750);
         });
 
-        startBtn.addEventListener('mouseenter', () => { isHovering = true; });
-        startBtn.addEventListener('mouseleave', () => { isHovering = false; });
+        startBtn.addEventListener('mouseenter', () => isHovering = true);
+        startBtn.addEventListener('mouseleave', () => isHovering = false);
 
         function update() {
-            let dx = bounceX - mouseX;
-            let dy = bounceY - mouseY;
+            let dx = bounceX - mouseX, dy = bounceY - mouseY;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
-            // Abstoß-Effekt (außer bei Hover oder Klick-Pause)
             if (!isHovering && !pushLock && dist < 130) {
-                speedX += dx * 0.0025;
-                speedY += dy * 0.0025;
+                speedX += dx * 0.003; speedY += dy * 0.003;
             }
 
-            // Normalisierung der Geschwindigkeit
-            const targetMag = Math.sqrt(tvSpeed**2 * 2);
-            const currentMag = Math.sqrt(speedX**2 + speedY**2);
-            speedX += ((speedX / currentMag * targetMag) - speedX) * 0.035;
-            speedY += ((speedY / currentMag * targetMag) - speedY) * 0.035;
+            const targetMag = Math.sqrt(baseSpeed**2 * 2);
+            const currentMag = Math.sqrt(speedX**2 + speedY**2) || 1;
+            speedX += ((speedX / currentMag * targetMag) - speedX) * 0.04;
+            speedY += ((speedY / currentMag * targetMag) - speedY) * 0.04;
 
-            const rect = startBtn.getBoundingClientRect();
+            bounceX += speedX; bounceY += speedY;
+
+            const btnRect = startBtn.getBoundingClientRect();
             const hRect = headerEl.getBoundingClientRect();
-            
-            bounceX += speedX;
-            bounceY += speedY;
 
-            // Grenzen berechnen
-            if (bounceX <= rect.width/2 + 20 || bounceX >= width - rect.width/2 - 20) speedX *= -1;
-            // Prallt an der Unterkante des Namens ab (hRect.bottom)
-            if (bounceY <= hRect.bottom + rect.height/2 + 15 || bounceY >= height - rect.height/2 - 20) speedY *= -1;
+            // Kollisionsgrenzen: Oben wird durch die hRect.bottom (Nav-Linie) begrenzt
+            if (bounceX < btnRect.width/2 + 20 || bounceX > width - btnRect.width/2 - 20) speedX *= -1;
+            if (bounceY < hRect.bottom + btnRect.height/2 + 20 || bounceY > height - btnRect.height/2 - 20) speedY *= -1;
 
-            startBtn.style.left = (bounceX - rect.width/2) + 'px';
-            startBtn.style.top = (bounceY - rect.height/2) + 'px';
+            startBtn.style.left = (bounceX - btnRect.width/2) + 'px';
+            startBtn.style.top = (bounceY - btnRect.height/2) + 'px';
         }
 
-        function drawCursorCoords() {
-            ctx.save();
-            ctx.translate(mouseX + 15, mouseY + 15);
+        function drawCoords() {
+            ctx.clearRect(0, 0, width, height);
             ctx.font = "400 9px monospace";
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--info-color');
-            ctx.fillText(`X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`, 0, 10);
-            ctx.restore();
+            ctx.fillText(`X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`, mouseX + 15, mouseY + 25);
         }
 
         function loop() {
-            ctx.clearRect(0, 0, width, height);
             update();
-            drawCursorCoords();
+            drawCoords();
             requestAnimationFrame(loop);
         }
 
-        setInitialTheme();
+        // Initiales Theme setzen
+        const hour = new Date().getHours();
+        document.body.setAttribute('data-theme', (hour >= 18 || hour < 6) ? 'dark' : 'light');
+
         window.addEventListener('resize', init);
-        init(); loop();
+        init();
+        loop();
     </script>
 </body>
 </html>
