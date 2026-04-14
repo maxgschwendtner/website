@@ -11,8 +11,16 @@
         #ui { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; padding: 30px; box-sizing: border-box; z-index: 10; }
         .header { display: flex; flex-direction: column; text-align: left; font-size: 32px; font-weight: 900; line-height: 0.9; letter-spacing: -1.5px; color: #000; text-transform: uppercase; pointer-events: auto; }
         @media (min-width: 769px) { .header { flex-direction: row; gap: 12px; } }
+        
+        /* Footer Mail - Jetzt dicker geschrieben */
         .footer { text-align: right; font-size: 15px; pointer-events: auto; }
-        .footer a { color: #0000FF; text-decoration: none; font-weight: 100; letter-spacing: 0.5px; }
+        .footer a { 
+            color: #0000FF; 
+            text-decoration: none; 
+            font-weight: 600; /* Vorher 100, jetzt dicker */
+            letter-spacing: 0.2px; 
+            -webkit-font-smoothing: antialiased;
+        }
 
         #start-btn {
             position: absolute; top: 0; left: 0;
@@ -56,8 +64,9 @@
         const headerEl = document.getElementById('main-header');
 
         let width, height, dpr;
-        let bounceX, bounceY, speedX = 1.1, speedY = 1.1; 
-        let mouseX = -100, mouseY = -100, lastX = 0, lastY = 0;
+        const baseSpeed = 1.1; 
+        let bounceX, bounceY, speedX = baseSpeed, speedY = baseSpeed; 
+        let mouseX = -100, mouseY = -100;
         let isHovering = false, hoverStartTime = 0;
         let mouseAngle = 0;
 
@@ -70,7 +79,6 @@
         }
 
         window.addEventListener('mousemove', (e) => { 
-            // Berechne Richtung der Mausbewegung
             const dx = e.clientX - mouseX;
             const dy = e.clientY - mouseY;
             if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
@@ -88,6 +96,8 @@
             if (r < 0.33) speedX *= -1;
             else if (r < 0.66) speedY *= -1;
             else { speedX *= -1; speedY *= -1; }
+            speedX = baseSpeed * Math.sign(speedX);
+            speedY = baseSpeed * Math.sign(speedY);
         });
 
         function drawGrid() {
@@ -109,9 +119,7 @@
 
         function drawCursorInfo() {
             ctx.save();
-            // Etwas Offset, damit es nicht direkt unter der Windows-Maus liegt
             ctx.translate(mouseX + 15, mouseY + 15);
-            
             ctx.font = "400 10px monospace";
             ctx.fillStyle = "rgba(0,0,0,0.6)";
             ctx.textAlign = "left";
@@ -119,7 +127,6 @@
             const txt = `X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`;
             ctx.fillText(txt, 0, 10);
             
-            // Kompass-Vektor (Dezenter Strich) rechts neben Text
             const textWidth = ctx.measureText(txt).width;
             ctx.translate(textWidth + 15, 7);
             ctx.rotate(mouseAngle);
@@ -129,19 +136,22 @@
             ctx.moveTo(-4, 0); ctx.lineTo(4, 0); 
             ctx.moveTo(1, -2); ctx.lineTo(4, 0); ctx.lineTo(1, 2);
             ctx.stroke();
-            
             ctx.restore();
         }
 
         function update() {
-            // Scheu-Effekt (Fleeing)
             let dx = bounceX - mouseX;
             let dy = bounceY - mouseY;
             let dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < 100) {
-                speedX += dx * 0.002;
-                speedY += dy * 0.002;
+            if (dist < 80) {
+                speedX += dx * 0.001; 
+                speedY += dy * 0.001;
             }
+
+            speedX *= 0.99; 
+            speedY *= 0.99;
+            if (Math.abs(speedX) < baseSpeed) speedX = baseSpeed * Math.sign(speedX);
+            if (Math.abs(speedY) < baseSpeed) speedY = baseSpeed * Math.sign(speedY);
 
             const rect = startBtn.getBoundingClientRect();
             const headerRect = headerEl.getBoundingClientRect();
