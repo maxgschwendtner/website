@@ -23,7 +23,6 @@
             margin: 0; padding: 0; overflow: hidden; 
             background: var(--bg-color); 
             transition: background 2s ease; 
-            /* System-Font für maximale Pixelschärfe */
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             cursor: default; 
             -webkit-font-smoothing: antialiased;
@@ -31,16 +30,30 @@
             text-rendering: geometricPrecision;
         }
 
-        canvas { display: block; width: 100%; height: 100%; pointer-events: none; position: absolute; top: 0; left: 0; }
+        canvas { 
+            display: block; width: 100%; height: 100%; 
+            pointer-events: none; position: absolute; 
+            top: 0; left: 0; z-index: 1; /* Hinter dem UI */
+        }
         
-        #ui { position: absolute; width: 100%; top: 0; left: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; padding: 25px 35px; box-sizing: border-box; z-index: 10; }
+        #ui { 
+            position: absolute; width: 100%; height: 100vh; 
+            top: 0; left: 0; pointer-events: none; 
+            display: flex; flex-direction: column; 
+            justify-content: space-between; 
+            padding: 30px 35px; /* Etwas mehr Platz für den Header */
+            box-sizing: border-box; 
+            z-index: 10; /* Über dem Canvas */
+        }
         
         .header { 
             display: flex; flex-direction: column; text-align: left; 
             font-size: 34px; font-weight: 800; line-height: 0.82; 
             letter-spacing: -2.1px; 
-            color: var(--text-color); text-transform: uppercase; pointer-events: auto; 
+            color: var(--text-color); text-transform: uppercase; 
+            pointer-events: auto; 
             transition: color 2s ease;
+            width: fit-content;
         }
         @media (min-width: 769px) { .header { flex-direction: row; gap: 10px; } }
         
@@ -53,7 +66,7 @@
             font-size: 13px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase;
             padding: 25px 35px; z-index: 11; white-space: nowrap; display: inline-block;
             will-change: left, top;
-            transition: color 0.1s ease; /* Schneller Wechsel zu Schwarz */
+            transition: color 0.1s ease;
         }
 
         #start-btn::before {
@@ -61,11 +74,8 @@
             background: #EAFF00; z-index: -1; border-radius: 1px; display: none;
         }
 
-        /* Hover-Effekt: Gelbe Box an, Schrift wird Schwarz */
         #start-btn:hover { color: #000000; }
         #start-btn:hover::before { display: block; }
-        #start-btn:hover span { opacity: 1; }
-
     </style>
 </head>
 <body>
@@ -101,33 +111,25 @@
             width = window.innerWidth; height = window.innerHeight;
             canvas.width = width * dpr; canvas.height = height * dpr;
             ctx.scale(dpr, dpr);
-            bounceX = width / 2; bounceY = height / 2;
+            
+            // Startposition unterhalb des Headers sicherstellen
+            const hRect = headerEl.getBoundingClientRect();
+            bounceX = width / 2; 
+            bounceY = hRect.bottom + 100; 
+            
             updateTheme();
         }
 
         window.addEventListener('mousemove', (e) => { 
-            mouseX = e.clientX; 
-            mouseY = e.clientY; 
+            mouseX = e.clientX; mouseY = e.clientY; 
         });
 
-        // 33/33/33 Klick-Logik für Richtungswechsel
         startBtn.addEventListener('mousedown', () => {
             const r = Math.random();
             const boost = 1.4;
-
-            if (r < 0.33) {
-                speedX *= -boost;
-                speedY *= -boost;
-            } else if (r < 0.66) {
-                let tempX = speedX;
-                speedX = -speedY * boost;
-                speedY = tempX * boost;
-            } else {
-                let tempX = speedX;
-                speedX = speedY * boost;
-                speedY = -tempX * boost;
-            }
-            
+            if (r < 0.33) { speedX *= -boost; speedY *= -boost; } 
+            else if (r < 0.66) { let t = speedX; speedX = -speedY * boost; speedY = t * boost; } 
+            else { let t = speedX; speedX = speedY * boost; speedY = -t * boost; }
             pushLock = true;
             setTimeout(() => { pushLock = false; }, 750); 
         });
@@ -135,24 +137,14 @@
         startBtn.addEventListener('mouseenter', () => { isHovering = true; });
         startBtn.addEventListener('mouseleave', () => { isHovering = false; });
 
-        function drawCursorCoords() {
-            ctx.save();
-            ctx.translate(mouseX + 15, mouseY + 15);
-            ctx.font = "400 9px 'SF Mono', 'Roboto Mono', Menlo, monospace";
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--info-color');
-            ctx.fillText(`X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`, 0, 10);
-            ctx.restore();
-        }
-
         function update() {
             let dx = bounceX - mouseX;
             let dy = bounceY - mouseY;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
             if (!isHovering && !pushLock && dist < 130) {
-                const pushStrength = 0.0025;
-                speedX += dx * pushStrength;
-                speedY += dy * pushStrength;
+                speedX += dx * 0.0025;
+                speedY += dy * 0.0025;
             }
 
             const targetMag = Math.sqrt(tvSpeed**2 * 2);
@@ -161,16 +153,27 @@
             speedY += ((speedY / currentMag * targetMag) - speedY) * 0.035;
 
             const rect = startBtn.getBoundingClientRect();
-            const headerRect = headerEl.getBoundingClientRect();
+            const hRect = headerEl.getBoundingClientRect();
             
             bounceX += speedX;
             bounceY += speedY;
 
+            // WICHTIG: Bounce-Grenzen inkl. Header-Abstand
             if (bounceX <= rect.width/2 + 20 || bounceX >= width - rect.width/2 - 20) speedX *= -1;
-            if (bounceY <= headerRect.bottom + rect.height/2 || bounceY >= height - rect.height/2 - 20) speedY *= -1;
+            // Der Button darf nicht höher als die Unterkante des Headers (plus Sicherheitsabstand)
+            if (bounceY <= hRect.bottom + rect.height/2 + 10 || bounceY >= height - rect.height/2 - 20) speedY *= -1;
 
             startBtn.style.left = (bounceX - rect.width/2) + 'px';
             startBtn.style.top = (bounceY - rect.height/2) + 'px';
+        }
+
+        function drawCursorCoords() {
+            ctx.save();
+            ctx.translate(mouseX + 15, mouseY + 15);
+            ctx.font = "400 9px monospace";
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--info-color');
+            ctx.fillText(`X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`, 0, 10);
+            ctx.restore();
         }
 
         function loop() {
