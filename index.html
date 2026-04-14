@@ -23,7 +23,7 @@
             margin: 0; padding: 0; overflow: hidden; 
             background: var(--bg-color); 
             transition: background 2s ease; 
-            /* SF Pro / System-Font für maximale Schärfe */
+            /* System-Font für maximale Pixelschärfe */
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             cursor: default; 
             -webkit-font-smoothing: antialiased;
@@ -53,6 +53,7 @@
             font-size: 13px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase;
             padding: 25px 35px; z-index: 11; white-space: nowrap; display: inline-block;
             will-change: left, top;
+            transition: color 0.1s ease; /* Schneller Wechsel zu Schwarz */
         }
 
         #start-btn::before {
@@ -60,10 +61,10 @@
             background: #EAFF00; z-index: -1; border-radius: 1px; display: none;
         }
 
-        /* Under Construction Text wird bei Hover komplett unsichtbar */
-        #start-btn:hover { color: transparent; }
+        /* Hover-Effekt: Gelbe Box an, Schrift wird Schwarz */
+        #start-btn:hover { color: #000000; }
         #start-btn:hover::before { display: block; }
-        #start-btn:hover span { opacity: 0; }
+        #start-btn:hover span { opacity: 1; }
 
     </style>
 </head>
@@ -109,28 +110,24 @@
             mouseY = e.clientY; 
         });
 
-        // 33/33/33 Klick-Logik
+        // 33/33/33 Klick-Logik für Richtungswechsel
         startBtn.addEventListener('mousedown', () => {
             const r = Math.random();
             const boost = 1.4;
 
             if (r < 0.33) {
-                // 1. Richtungsumkehr (33%)
                 speedX *= -boost;
                 speedY *= -boost;
             } else if (r < 0.66) {
-                // 2. 90° Drehung Rechts (33%)
                 let tempX = speedX;
                 speedX = -speedY * boost;
                 speedY = tempX * boost;
             } else {
-                // 3. 90° Drehung Links (33%)
                 let tempX = speedX;
                 speedX = speedY * boost;
                 speedY = -tempX * boost;
             }
             
-            // Schubs-Sperre für 0,75 Sekunden
             pushLock = true;
             setTimeout(() => { pushLock = false; }, 750); 
         });
@@ -152,14 +149,12 @@
             let dy = bounceY - mouseY;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
-            // Abstoßung nur, wenn kein Hover und keine Sperre
             if (!isHovering && !pushLock && dist < 130) {
                 const pushStrength = 0.0025;
                 speedX += dx * pushStrength;
                 speedY += dy * pushStrength;
             }
 
-            // Sanfte Rückführung zur Basisgeschwindigkeit
             const targetMag = Math.sqrt(tvSpeed**2 * 2);
             const currentMag = Math.sqrt(speedX**2 + speedY**2);
             speedX += ((speedX / currentMag * targetMag) - speedX) * 0.035;
@@ -171,7 +166,6 @@
             bounceX += speedX;
             bounceY += speedY;
 
-            // Kollisionen mit UI-Elementen und Bildschirmrand
             if (bounceX <= rect.width/2 + 20 || bounceX >= width - rect.width/2 - 20) speedX *= -1;
             if (bounceY <= headerRect.bottom + rect.height/2 || bounceY >= height - rect.height/2 - 20) speedY *= -1;
 
