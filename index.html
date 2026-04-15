@@ -6,98 +6,69 @@
     <title>Max Gschwendtner</title>
     <style>
         :root {
-            /* Apple Ästhetik - Light Mode */
+            /* Apple Light Mode */
             --bg-color: #ffffff;
-            --text-color: #1d1d1f; /* Weiches Apple-Schwarz */
-            --accent-blue: #0066cc; /* Apple Link-Blau */
-            --info-color: #86868b; /* Sanftes Grau für Koordinaten */
-            --btn-yellow: #FFCC00; 
+            --text-primary: #1d1d1f; /* Apple Black */
+            --accent-blue: #0066cc;
+            --info-color: rgba(0,0,0,0.45);
+            --btn-yellow: #FFCC00;
+            --toggle-bg: #1d1d1f; /* Schwarzer Punkt */
         }
 
         [data-theme='dark'] {
-            /* Apple Ästhetik - Dark Mode */
-            --bg-color: #000000; /* Tiefes OLED-Schwarz */
-            --text-color: #f5f5f7; /* Klares Apple-Weiß */
-            --accent-blue: #2997ff; /* Helleres Blau für Dark Mode */
-            --info-color: #6e6e73;
-            --btn-yellow: #FFD60A;
+            /* Apple Dark Mode (OLED) */
+            --bg-color: #000000;
+            --text-primary: #ffffff;
+            --accent-blue: #2997ff;
+            --info-color: rgba(255,255,255,0.45);
+            --toggle-bg: #ffffff; /* Weißer Punkt */
         }
 
         body, html { 
             margin: 0; padding: 0; overflow: hidden; 
             background: var(--bg-color); 
-            transition: background 0.8s cubic-bezier(0.4, 0, 0.2, 1); 
-            /* Native Apple System-Fonts */
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            /* Apple-Smooth Transition */
+            transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; 
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Feste, absolute Positionierungen (Bulletproof gegen Browser-Bugs) */
         #logo {
-            position: fixed;
-            top: 35px;
-            left: 35px;
-            z-index: 100;
-            display: flex; 
-            flex-direction: column; 
-            font-size: 32px; 
-            font-weight: 800; 
-            line-height: 0.85; 
-            letter-spacing: -0.05em; 
-            color: var(--text-color); 
-            text-transform: uppercase; 
-            pointer-events: auto;
-            transition: color 0.8s ease;
+            position: fixed; top: 35px; left: 35px; z-index: 100;
+            display: flex; flex-direction: column; 
+            font-size: 32px; font-weight: 800; line-height: 0.85; 
+            letter-spacing: -0.05em; color: var(--text-primary); 
+            text-transform: uppercase; pointer-events: auto;
+            transition: color 0.5s ease;
         }
         @media (min-width: 769px) { #logo { flex-direction: row; gap: 10px; } }
 
+        /* Der Theme-Toggle (Punkt oben rechts) */
         #theme-toggle {
-            position: fixed;
-            top: 40px;
-            right: 35px;
-            z-index: 100;
-            width: 13px; 
-            height: 13px; 
-            border: 1.5px solid var(--text-color);
-            border-radius: 50%; 
-            cursor: pointer; 
-            pointer-events: auto; 
-            transition: transform 0.2s ease, border-color 0.8s ease;
+            position: fixed; top: 40px; right: 35px; z-index: 100;
+            width: 14px; height: 14px; 
+            background-color: var(--toggle-bg);
+            border: 1.5px solid var(--toggle-bg);
+            border-radius: 50%; cursor: pointer; pointer-events: auto; 
+            transition: transform 0.2s ease, background-color 0.5s ease, border-color 0.5s ease;
         }
         #theme-toggle:hover { transform: scale(1.2); }
 
         #footer {
-            position: fixed;
-            bottom: 35px;
-            right: 35px;
-            z-index: 100;
-            font-size: 14px; 
-            font-weight: 500;
-            letter-spacing: -0.01em;
-            pointer-events: auto;
+            position: fixed; bottom: 35px; right: 35px; z-index: 100;
+            font-size: 14px; font-weight: 500;
         }
         #footer a { 
-            color: var(--accent-blue); 
-            text-decoration: none; 
-            transition: color 0.8s ease; 
+            color: var(--accent-blue); text-decoration: none; 
+            transition: color 0.5s ease; 
         }
 
-        /* Der flüchtende Button */
         #start-btn {
-            position: absolute; 
-            z-index: 50;
-            background: none; 
-            border: none; 
-            color: var(--btn-yellow);
-            cursor: pointer; 
-            font-size: 13px; 
-            font-weight: 800; 
-            letter-spacing: 2px; 
-            text-transform: uppercase;
-            padding: 25px 35px; 
-            white-space: nowrap; 
-            pointer-events: auto;
+            position: absolute; z-index: 50;
+            background: none; border: none; color: var(--btn-yellow);
+            cursor: pointer; font-size: 13px; font-weight: 800; 
+            letter-spacing: 2px; text-transform: uppercase;
+            padding: 25px 35px; white-space: nowrap; 
         }
 
         #start-btn::before {
@@ -105,19 +76,13 @@
             background: var(--btn-yellow); z-index: -1; border-radius: 2px; display: none;
         }
 
-        /* Hover-Effekt: Apple-Schwarz auf Gelb */
         #start-btn:hover { color: #000000 !important; }
         #start-btn:hover::before { display: block; }
 
-        canvas { 
-            display: block; position: absolute; top: 0; left: 0; 
-            z-index: 1; pointer-events: none; 
-        }
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
     </style>
 </head>
-<body>
-
-    <div id="logo">
+<body data-theme="light"> <div id="logo">
         <span>MAX</span><span>GSCHWENDTNER</span>
     </div>
     <div id="theme-toggle"></div>
@@ -141,26 +106,22 @@
         let mouseX = -1000, mouseY = -1000;
         let isHovering = false, pushLock = false;
 
-        // Theme Switch Logic
         themeToggle.addEventListener('click', () => {
-            const isDark = document.body.getAttribute('data-theme') === 'dark';
-            document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            const currentTheme = document.body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', newTheme);
         });
 
         function init() {
             dpr = window.devicePixelRatio || 1;
             width = window.innerWidth; height = window.innerHeight;
             canvas.width = width * dpr; canvas.height = height * dpr;
-            
             ctx.setTransform(1, 0, 0, 1, 0, 0); 
             ctx.scale(dpr, dpr);
             
             const logoRect = logoEl.getBoundingClientRect();
-            const btnRect = startBtn.getBoundingClientRect();
-
-            // Zufälliger Startpunkt, aber sicher außerhalb des Logos
             bounceX = Math.random() * (width - 200) + 100;
-            bounceY = Math.random() * (height - logoRect.bottom - 150) + logoRect.bottom + 50;
+            bounceY = Math.random() * (height - logoRect.bottom - 150) + logoRect.bottom + 100;
 
             const angle = Math.random() * Math.PI * 2;
             const speed = Math.sqrt(baseSpeed**2 * 2);
@@ -168,10 +129,7 @@
             speedY = Math.sin(angle) * speed;
         }
 
-        window.addEventListener('mousemove', (e) => { 
-            mouseX = e.clientX; 
-            mouseY = e.clientY; 
-        });
+        window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
 
         startBtn.addEventListener('mousedown', () => {
             const r = Math.random();
@@ -203,7 +161,6 @@
             const btnRect = startBtn.getBoundingClientRect();
             const logoRect = logoEl.getBoundingClientRect();
 
-            // Kollision an den Rändern und unterhalb des Logos
             if (bounceX < btnRect.width/2 + 20 || bounceX > width - btnRect.width/2 - 20) speedX *= -1;
             if (bounceY < logoRect.bottom + btnRect.height/2 + 20 || bounceY > height - btnRect.height/2 - 20) speedY *= -1;
 
@@ -213,19 +170,12 @@
 
         function loop() {
             ctx.clearRect(0, 0, width, height);
-            
-            // Winziges Koordinatensystem, das perfekt an der Maus klebt (Apple SF Mono)
-            ctx.font = "500 9px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+            ctx.font = "500 9px ui-monospace, SFMono-Regular, monospace";
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--info-color');
             ctx.fillText(`X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`, mouseX + 15, mouseY + 25);
-            
             update();
             requestAnimationFrame(loop);
         }
-
-        // Setzt das initial Theme (Nacht oder Tag)
-        const hour = new Date().getHours();
-        document.body.setAttribute('data-theme', (hour >= 18 || hour < 6) ? 'dark' : 'light');
 
         window.addEventListener('resize', init);
         window.onload = () => { init(); loop(); };
