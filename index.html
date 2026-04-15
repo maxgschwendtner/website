@@ -6,17 +6,16 @@
     <title>Max Gschwendtner</title>
     <style>
         :root {
-            /* Light Mode - Initial */
             --bg-color: #ffffff;
             --text-primary: #000000;
             --accent-blue: #0066cc;
             --info-color: rgba(0,0,0,0.35);
-            --pure-yellow: #FFEA00; /* Reines Primärgelb */
-            --neon-hover: #EAFF00;  /* Leuchtendes Neongelb */
+            --pure-yellow: #FFEA00;
+            --neon-hover: #EAFF00;
+            --logo-size: 32px;
         }
 
         [data-theme='dark'] {
-            /* Nachtmodus */
             --bg-color: #000000;
             --text-primary: #ffffff;
             --accent-blue: #2997ff;
@@ -27,43 +26,65 @@
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; 
             background-color: var(--bg-color); 
-            transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; 
             -webkit-font-smoothing: antialiased;
-            touch-action: none; /* Verhindert Scrolling auf Mobile */
+            touch-action: none;
         }
 
-        /* Name oben links */
+        /* --- DAS ANIMIERTE LOGO --- */
         #logo {
             position: fixed; top: 35px; left: 35px; z-index: 100;
-            display: flex; flex-direction: column; 
-            font-size: 32px; font-weight: 800; line-height: 0.85; 
+            font-size: var(--logo-size); font-weight: 800; 
             letter-spacing: -0.05em; color: var(--text-primary); 
-            text-transform: uppercase; pointer-events: auto;
-            transition: color 0.4s ease;
+            text-transform: uppercase;
+            transition: color 0.6s ease;
+            display: block;
         }
-        @media (max-width: 600px) { #logo { font-size: 24px; top: 20px; left: 20px; } }
 
-        /* Der feine Ring oben rechts */
+        #logo .container {
+            position: relative;
+            display: flex;
+            flex-direction: column; /* Grundstruktur ist untereinander */
+        }
+
+        #logo span {
+            display: block;
+            line-height: 0.85;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Tag-Version: GSCHWENDTNER wird nach rechts geschoben */
+        #logo span.last {
+            transform: translate(75px, -0.85em); /* Schiebt es neben den Vornamen */
+        }
+
+        /* Nacht-Version: Alles auf Null (untereinander) */
+        [data-theme='dark'] #logo span.last {
+            transform: translate(0, 0);
+        }
+
+        @media (max-width: 600px) {
+            :root { --logo-size: 24px; }
+            #logo span.last { transform: translate(58px, -0.85em); }
+        }
+
+        /* --- RESTLICHE ELEMENTE --- */
         #theme-toggle {
             position: fixed; top: 40px; right: 35px; z-index: 100;
             width: 14px; height: 14px; 
             border: 1px solid var(--text-primary); 
             background: transparent;
-            border-radius: 50%; cursor: pointer; pointer-events: auto; 
-            transition: border-color 0.4s ease, transform 0.2s ease;
+            border-radius: 50%; cursor: pointer;
+            transition: border-color 0.6s ease, transform 0.2s ease;
         }
-        @media (max-width: 600px) { #theme-toggle { top: 25px; right: 20px; } }
 
-        /* Mail unten rechts */
         #footer {
             position: fixed; bottom: 35px; right: 35px; z-index: 100;
             font-size: 14px; font-weight: 500;
         }
-        #footer a { color: var(--accent-blue); text-decoration: none; transition: color 0.4s ease; }
-        @media (max-width: 600px) { #footer { bottom: 20px; right: 20px; font-size: 12px; } }
+        #footer a { color: var(--accent-blue); text-decoration: none; transition: color 0.6s ease; }
 
-        /* Flüchtender Button */
         #start-btn {
             position: absolute; z-index: 50;
             background: none; border: none; 
@@ -71,7 +92,6 @@
             cursor: pointer; font-size: 13px; font-weight: 800; 
             letter-spacing: 2.2px; text-transform: uppercase;
             padding: 25px 35px; white-space: nowrap; 
-            pointer-events: auto;
         }
 
         #start-btn::before {
@@ -79,19 +99,21 @@
             background-color: var(--neon-hover); 
             z-index: -1; border-radius: 1px; display: none;
         }
-
         #start-btn:hover { color: #000000 !important; }
         #start-btn:hover::before { display: block; }
 
-        canvas { 
-            display: block; position: absolute; top: 0; left: 0; 
-            z-index: 1; pointer-events: none; 
-        }
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
     </style>
 </head>
 <body data-theme="light">
 
-    <div id="logo"><span>MAX</span><span>GSCHWENDTNER</span></div>
+    <div id="logo">
+        <div class="container">
+            <span class="first">MAX</span>
+            <span class="last">GSCHWENDTNER</span>
+        </div>
+    </div>
+
     <div id="theme-toggle"></div>
     <div id="footer"><a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a></div>
     
@@ -108,9 +130,9 @@
         const baseSpeed = 1.05; 
         let bounceX, bounceY, speedX, speedY; 
         let mouseX = -1000, mouseY = -1000;
+        let lerpX = -1000, lerpY = -1000;
         let isHovering = false, pushLock = false;
 
-        // Theme Switcher für Nachtmodus
         themeToggle.addEventListener('click', () => {
             const current = document.documentElement.getAttribute('data-theme') || 'light';
             const target = current === 'dark' ? 'light' : 'dark';
@@ -119,37 +141,25 @@
         });
 
         function init() {
-            // Skalierungs-Logik für alle Bildschirme (Retina/Mac/Mobile)
             dpr = window.devicePixelRatio || 1;
-            width = window.innerWidth;
-            height = window.innerHeight;
-
-            canvas.width = width * dpr;
-            canvas.height = height * dpr;
-            canvas.style.width = width + 'px';
-            canvas.style.height = height + 'px';
-            
+            width = window.innerWidth; height = window.innerHeight;
+            canvas.width = width * dpr; canvas.height = height * dpr;
+            canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
             ctx.setTransform(1, 0, 0, 1, 0, 0); 
             ctx.scale(dpr, dpr);
-            
-            // Startposition Mitte
-            bounceX = width / 2;
-            bounceY = height / 2;
-
+            bounceX = width / 2; bounceY = height / 2;
             const angle = Math.random() * Math.PI * 2;
             const speed = Math.sqrt(baseSpeed**2 * 2);
-            speedX = Math.cos(angle) * speed;
-            speedY = Math.sin(angle) * speed;
+            speedX = Math.cos(angle) * speed; speedY = Math.sin(angle) * speed;
         }
 
-        // Maus & Touch Support
         const updateMouse = (e) => {
             mouseX = (e.clientX || (e.touches && e.touches[0].clientX));
             mouseY = (e.clientY || (e.touches && e.touches[0].clientY));
+            if (lerpX < 0) { lerpX = mouseX; lerpY = mouseY; }
         };
         window.addEventListener('mousemove', updateMouse);
         window.addEventListener('touchstart', updateMouse);
-        window.addEventListener('touchmove', updateMouse);
 
         startBtn.addEventListener('mousedown', () => {
             speedX *= 1.6; speedY *= 1.6;
@@ -161,6 +171,9 @@
         startBtn.addEventListener('mouseleave', () => isHovering = false);
 
         function update() {
+            lerpX += (mouseX - lerpX) * 0.12; // Gleit-Effekt Koordinaten
+            lerpY += (mouseY - lerpY) * 0.12;
+
             let dx = bounceX - mouseX, dy = bounceY - mouseY;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
@@ -176,9 +189,8 @@
             bounceX += speedX; bounceY += speedY;
 
             const btnRect = startBtn.getBoundingClientRect();
-            // Kollision an Rändern
             if (bounceX < btnRect.width/2 + 20 || bounceX > width - btnRect.width/2 - 20) speedX *= -1;
-            if (bounceY < 120 || bounceY > height - btnRect.height/2 - 20) speedY *= -1;
+            if (bounceY < 150 || bounceY > height - btnRect.height/2 - 20) speedY *= -1;
 
             startBtn.style.left = (bounceX - btnRect.width/2) + 'px';
             startBtn.style.top = (bounceY - btnRect.height/2) + 'px';
@@ -186,16 +198,11 @@
 
         function loop() {
             ctx.clearRect(0, 0, width, height);
-            
-            // Scharfe, kleine Koordinaten (nah an der Maus)
-            ctx.font = "500 8px ui-monospace, SFMono-Regular, Menlo, monospace";
+            ctx.font = "500 11px ui-monospace, SFMono-Regular, Menlo, monospace";
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--info-color');
-            
             if (mouseX > 0 && mouseX < width) {
-                // Präziser Offset für Mac-Bildschirme
-                ctx.fillText(`X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`, mouseX + 10, mouseY + 14);
+                ctx.fillText(`X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`, lerpX + 12, lerpY + 18);
             }
-            
             update();
             requestAnimationFrame(loop);
         }
