@@ -6,15 +6,15 @@
     <title>Max Gschwendtner</title>
     <style>
         :root {
-            /* Light Mode - Startzustand */
+            /* Light Mode */
             --bg-color: #ffffff;
             --text-primary: #000000;
             --accent-blue: #0066cc;
-            --info-color: rgba(0,0,0,0.4);
+            --info-color: rgba(0,0,0,0.35);
             
-            /* Gelb-Töne */
-            --simple-yellow: #FFCC00;   /* Das einfache Gelb für die Schrift */
-            --neon-yellow: #EAFF00;     /* Das Neongelb für den Hover-Hintergrund */
+            /* Zitronengelb-Palette */
+            --lemon-yellow: #F5FF00;  /* Klares Zitronengelb (Text) */
+            --neon-highlight: #EAFF00; /* Stechendes Neongelb (Hover-BG) */
         }
 
         [data-theme='dark'] {
@@ -22,18 +22,18 @@
             --bg-color: #000000;
             --text-primary: #ffffff;
             --accent-blue: #2997ff;
-            --info-color: rgba(255,255,255,0.4);
+            --info-color: rgba(255,255,255,0.35);
         }
 
         body, html { 
             margin: 0; padding: 0; overflow: hidden; 
             background-color: var(--bg-color); 
             transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; 
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Logo oben links */
+        /* Name oben links */
         #logo {
             position: fixed; top: 35px; left: 35px; z-index: 100;
             display: flex; flex-direction: column; 
@@ -44,10 +44,10 @@
         }
         @media (min-width: 769px) { #logo { flex-direction: row; gap: 10px; } }
 
-        /* Dünner Ring oben rechts */
+        /* Der feine Ring oben rechts */
         #theme-toggle {
             position: fixed; top: 40px; right: 35px; z-index: 100;
-            width: 14px; height: 14px; 
+            width: 13px; height: 13px; 
             border: 1px solid var(--text-primary); 
             background: transparent;
             border-radius: 50%; cursor: pointer; pointer-events: auto; 
@@ -65,26 +65,25 @@
             transition: color 0.4s ease; 
         }
 
-        /* Under Construction Button */
+        /* Fleeing Button */
         #start-btn {
             position: absolute; z-index: 50;
             background: none; border: none; 
-            color: var(--simple-yellow); /* Einfaches Gelb am Anfang */
+            color: var(--lemon-yellow); /* Zitronengelb */
             cursor: pointer; font-size: 13px; font-weight: 800; 
             letter-spacing: 2.2px; text-transform: uppercase;
             padding: 25px 35px; white-space: nowrap; 
-            transition: color 0.2s ease;
+            transition: color 0.1s ease;
             pointer-events: auto;
         }
 
-        /* Das neongelbe Rechteck (nur bei Hover sichtbar) */
+        /* Hover-Box im Hintergrund */
         #start-btn::before {
             content: ""; position: absolute; top: 22px; left: 30px; right: 30px; bottom: 22px;
-            background-color: var(--neon-yellow); 
+            background-color: var(--neon-highlight); 
             z-index: -1; border-radius: 1px; display: none;
         }
 
-        /* Hover-Zustand */
         #start-btn:hover { color: #000000 !important; }
         #start-btn:hover::before { display: block; }
 
@@ -97,7 +96,7 @@
         <span>MAX</span><span>GSCHWENDTNER</span>
     </div>
 
-    <div id="theme-toggle" title="Switch Theme"></div>
+    <div id="theme-toggle"></div>
 
     <div id="footer">
         <a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a>
@@ -114,12 +113,12 @@
         const logoEl = document.getElementById('logo');
 
         let width, height, dpr;
-        const baseSpeed = 1.05; 
+        const baseSpeed = 1.1; 
         let bounceX, bounceY, speedX, speedY; 
         let mouseX = -1000, mouseY = -1000;
         let isHovering = false, pushLock = false;
 
-        // Theme Switch Logik
+        // Theme Switch
         themeToggle.addEventListener('click', () => {
             const current = document.documentElement.getAttribute('data-theme') || 'light';
             const target = current === 'dark' ? 'light' : 'dark';
@@ -134,8 +133,6 @@
             ctx.setTransform(1, 0, 0, 1, 0, 0); 
             ctx.scale(dpr, dpr);
             
-            const lRect = logoEl.getBoundingClientRect();
-            // Startposition unterhalb des Logos
             bounceX = width / 2;
             bounceY = height / 2;
 
@@ -147,11 +144,10 @@
 
         window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
 
-        // Kleiner Kick-Effekt beim Klicken
         startBtn.addEventListener('mousedown', () => {
-            speedX *= 1.5; speedY *= 1.5;
+            speedX *= 1.8; speedY *= 1.8;
             pushLock = true;
-            setTimeout(() => pushLock = false, 600);
+            setTimeout(() => pushLock = false, 500);
         });
 
         startBtn.addEventListener('mouseenter', () => isHovering = true);
@@ -161,23 +157,20 @@
             let dx = bounceX - mouseX, dy = bounceY - mouseY;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
-            // "Flucht"-Logik vor der Maus
-            if (!isHovering && !pushLock && dist < 140) {
-                speedX += dx * 0.004; speedY += dy * 0.004;
+            if (!isHovering && !pushLock && dist < 150) {
+                speedX += dx * 0.005; speedY += dy * 0.005;
             }
 
-            // Geschwindigkeit normalisieren
             const targetMag = Math.sqrt(baseSpeed**2 * 2);
             const currentMag = Math.sqrt(speedX**2 + speedY**2) || 1;
-            speedX += ((speedX / currentMag * targetMag) - speedX) * 0.05;
-            speedY += ((speedY / currentMag * targetMag) - speedY) * 0.05;
+            speedX += ((speedX / currentMag * targetMag) - speedX) * 0.06;
+            speedY += ((speedY / currentMag * targetMag) - speedY) * 0.06;
 
             bounceX += speedX; bounceY += speedY;
 
             const btnRect = startBtn.getBoundingClientRect();
             const lRect = logoEl.getBoundingClientRect();
 
-            // Abprallen an den Rändern
             if (bounceX < btnRect.width/2 + 20 || bounceX > width - btnRect.width/2 - 20) speedX *= -1;
             if (bounceY < lRect.bottom + btnRect.height/2 + 20 || bounceY > height - btnRect.height/2 - 20) speedY *= -1;
 
@@ -188,8 +181,8 @@
         function loop() {
             ctx.clearRect(0, 0, width, height);
             
-            // Koordinaten an der Maus
-            ctx.font = "500 9px ui-monospace, SFMono-Regular, Menlo, monospace";
+            // Kleine Koordinaten an der Maus (Monospace)
+            ctx.font = "500 9px ui-monospace, SFMono-Regular, monospace";
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--info-color');
             if (mouseX > 0) {
                 ctx.fillText(`X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`, mouseX + 15, mouseY + 25);
