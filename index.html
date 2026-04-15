@@ -10,7 +10,7 @@
             --text-primary: #000000;
             --accent-blue: #0066cc;
             --info-color: rgba(0,0,0,0.35);
-            --pure-yellow: #FFEA00; /* Reines Gelb ohne Grün/Orange */
+            --pure-yellow: #FFEA00;
             --neon-hover: #EAFF00;
             --logo-size: 32px;
         }
@@ -32,7 +32,6 @@
             touch-action: none;
         }
 
-        /* --- ANIMIERTES LOGO --- */
         #logo {
             position: fixed; top: 35px; left: 35px; z-index: 100;
             font-size: var(--logo-size); font-weight: 800; 
@@ -43,13 +42,9 @@
 
         #logo .container { position: relative; display: flex; flex-direction: column; }
         #logo span { display: block; line-height: 0.85; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-        
-        /* Tag-Modus: Name nebeneinander */
         #logo span.last { transform: translate(75px, -0.85em); }
-        /* Nacht-Modus: Name untereinander */
         [data-theme='dark'] #logo span.last { transform: translate(0, 0); }
 
-        /* --- UI ELEMENTE --- */
         #theme-toggle {
             position: fixed; top: 40px; right: 35px; z-index: 100;
             width: 14px; height: 14px; 
@@ -65,7 +60,6 @@
         }
         #footer a { color: var(--accent-blue); text-decoration: none; transition: color 0.6s ease; }
 
-        /* --- DER BUTTON --- */
         #start-btn {
             position: absolute; z-index: 50;
             background: none; border: none; 
@@ -74,7 +68,6 @@
             letter-spacing: 2.2px; text-transform: uppercase;
             padding: 25px 35px; white-space: nowrap; 
             outline: none;
-            /* Transition für den Impact-Effekt */
             transition: color 0.1s ease, transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
@@ -90,14 +83,6 @@
         #start-btn:hover:not(.locked)::before { display: block; }
 
         canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
-
-        @media (max-width: 600px) {
-            :root { --logo-size: 24px; }
-            #logo span.last { transform: translate(58px, -0.85em); }
-            #logo { top: 20px; left: 20px; }
-            #theme-toggle { top: 25px; right: 20px; }
-            #footer { bottom: 20px; right: 20px; }
-        }
     </style>
 </head>
 <body data-theme="light">
@@ -132,7 +117,6 @@
             const current = document.documentElement.getAttribute('data-theme') || 'light';
             const target = current === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', target);
-            document.body.setAttribute('data-theme', target);
         });
 
         function init() {
@@ -145,14 +129,11 @@
             canvas.style.height = height + 'px';
             ctx.setTransform(1, 0, 0, 1, 0, 0); 
             ctx.scale(dpr, dpr);
-            
             bounceX = width / 2;
             bounceY = height / 2;
-
             const angle = Math.random() * Math.PI * 2;
-            const speed = Math.sqrt(baseSpeed**2 * 2);
-            speedX = Math.cos(angle) * speed;
-            speedY = Math.sin(angle) * speed;
+            speedX = Math.cos(angle) * baseSpeed * 1.5;
+            speedY = Math.sin(angle) * baseSpeed * 1.5;
         }
 
         window.addEventListener('mousemove', (e) => {
@@ -160,65 +141,60 @@
             if (lerpX < 0) { lerpX = mouseX; lerpY = mouseY; }
         });
 
-        // VERFEINERTER VEKTORBASIERTER SCHUBS-MECHANISMUS
         startBtn.addEventListener('mousedown', () => {
             if (pushLock) return; 
 
+            pushLock = true; // Stoppt sofort das "automatische" Fliehen im Loop
+            startBtn.classList.add('locked');
+
             const rand = Math.random();
-            const boost = 2.8; 
+            const impactForce = 3.5; // Kraft des Klicks
             
-            // Logik: Rotation oder Umkehrung basierend auf aktuellem Vektor
+            // Wir berechnen die Richtung NEU, ohne die alte Kraft zu addieren
+            // Das verhindert das "Wegfliegen in 2 Richtungen"
             if (rand < 0.33) {
                 // 90° Links
                 const oldX = speedX;
-                speedX = speedY * boost;
-                speedY = -oldX * boost;
+                speedX = speedY * impactForce / baseSpeed;
+                speedY = -oldX * impactForce / baseSpeed;
             } else if (rand < 0.66) {
                 // 90° Rechts
                 const oldX = speedX;
-                speedX = -speedY * boost;
-                speedY = oldX * boost;
+                speedX = -speedY * impactForce / baseSpeed;
+                speedY = oldX * impactForce / baseSpeed;
             } else {
-                // 180° Turn mit leichter Varianz für organischeres Gefühl
-                const angleShift = (Math.random() - 0.5) * 0.2;
-                const cos = Math.cos(Math.PI + angleShift);
-                const sin = Math.sin(Math.PI + angleShift);
-                const newX = (speedX * cos - speedY * sin) * boost;
-                const newY = (speedX * sin + speedY * cos) * boost;
-                speedX = newX;
-                speedY = newY;
+                // 180° Turn
+                speedX = -speedX * impactForce;
+                speedY = -speedY * impactForce;
             }
             
-            // Impact Feedback (Kurzes Zucken)
             startBtn.style.transform = "scale(0.85)";
-            setTimeout(() => startBtn.style.transform = "scale(1)", 100);
-
-            pushLock = true;
-            startBtn.classList.add('locked');
             setTimeout(() => {
-                pushLock = false;
+                startBtn.style.transform = "scale(1)";
+                pushLock = false; // Reaktiviert das Fliehen nach dem Impact
                 startBtn.classList.remove('locked');
-            }, 500);
+            }, 600);
         });
 
         startBtn.addEventListener('mouseenter', () => isHovering = true);
         startBtn.addEventListener('mouseleave', () => isHovering = false);
 
         function update() {
-            // Koordinaten-Gleiten
             lerpX += (mouseX - lerpX) * 0.12;
             lerpY += (mouseY - lerpY) * 0.12;
 
-            let dx = bounceX - mouseX, dy = bounceY - mouseY;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-            
-            // Sanftes Wegdrücken bei Annäherung
-            if (!isHovering && !pushLock && dist < 140) {
-                speedX += dx * 0.004; speedY += dy * 0.004;
+            // Automatisches Fliehen NUR wenn nicht gerade geklickt wird (pushLock)
+            if (!isHovering && !pushLock) {
+                let dx = bounceX - mouseX, dy = bounceY - mouseY;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 140) {
+                    speedX += dx * 0.005; 
+                    speedY += dy * 0.005;
+                }
             }
 
-            // Rückkehr zur Basisgeschwindigkeit (Reibungssimulation)
-            const targetMag = Math.sqrt(baseSpeed**2 * 2);
+            // Bremst den Button sanft auf Basisgeschwindigkeit ab
+            const targetMag = baseSpeed * 1.5;
             const currentMag = Math.sqrt(speedX**2 + speedY**2) || 1;
             speedX += ((speedX / currentMag * targetMag) - speedX) * 0.04;
             speedY += ((speedY / currentMag * targetMag) - speedY) * 0.04;
@@ -226,7 +202,6 @@
             bounceX += speedX; bounceY += speedY;
 
             const btnRect = startBtn.getBoundingClientRect();
-            // Kollision Ränder (160px Safezone oben für das Logo)
             if (bounceX < btnRect.width/2 + 20 || bounceX > width - btnRect.width/2 - 20) speedX *= -1;
             if (bounceY < 160 || bounceY > height - btnRect.height/2 - 20) speedY *= -1;
 
@@ -236,15 +211,11 @@
 
         function loop() {
             ctx.clearRect(0, 0, width, height);
-            
-            // Retina-Koordinaten (11px, gleitend)
             ctx.font = "500 11px ui-monospace, SFMono-Regular, Menlo, monospace";
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--info-color');
-            
             if (mouseX > 0 && mouseX < width) {
                 ctx.fillText(`X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`, lerpX + 12, lerpY + 18);
             }
-            
             update();
             requestAnimationFrame(loop);
         }
