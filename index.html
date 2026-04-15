@@ -6,16 +6,18 @@
     <title>Max Gschwendtner</title>
     <style>
         :root {
+            /* Light Mode */
             --bg-color: #ffffff;
             --text-primary: #000000;
             --accent-blue: #0066cc;
             --info-color: rgba(0,0,0,0.35);
-            --pure-yellow: #FFEA00;
-            --neon-hover: #EAFF00;
+            --pure-yellow: #FFEA00; /* Absolut reines Gelb */
+            --neon-hover: #EAFF00;  /* Neongelb nur für Hinterlegung */
             --logo-size: 32px;
         }
 
         [data-theme='dark'] {
+            /* Nachtmodus */
             --bg-color: #000000;
             --text-primary: #ffffff;
             --accent-blue: #2997ff;
@@ -32,20 +34,19 @@
             touch-action: none;
         }
 
-        /* --- DAS ANIMIERTE LOGO --- */
+        /* --- ANIMIERTES LOGO --- */
         #logo {
             position: fixed; top: 35px; left: 35px; z-index: 100;
             font-size: var(--logo-size); font-weight: 800; 
             letter-spacing: -0.05em; color: var(--text-primary); 
             text-transform: uppercase;
-            transition: color 0.6s ease;
-            display: block;
+            pointer-events: none;
         }
 
         #logo .container {
             position: relative;
             display: flex;
-            flex-direction: column; /* Grundstruktur ist untereinander */
+            flex-direction: column; 
         }
 
         #logo span {
@@ -54,22 +55,17 @@
             transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Tag-Version: GSCHWENDTNER wird nach rechts geschoben */
+        /* Tag: Nebeneinander (Verschiebung berechnet auf Textlänge) */
         #logo span.last {
-            transform: translate(75px, -0.85em); /* Schiebt es neben den Vornamen */
+            transform: translate(75px, -0.85em);
         }
 
-        /* Nacht-Version: Alles auf Null (untereinander) */
+        /* Nacht: Untereinander */
         [data-theme='dark'] #logo span.last {
             transform: translate(0, 0);
         }
 
-        @media (max-width: 600px) {
-            :root { --logo-size: 24px; }
-            #logo span.last { transform: translate(58px, -0.85em); }
-        }
-
-        /* --- RESTLICHE ELEMENTE --- */
+        /* --- UI ELEMENTE --- */
         #theme-toggle {
             position: fixed; top: 40px; right: 35px; z-index: 100;
             width: 14px; height: 14px; 
@@ -85,6 +81,7 @@
         }
         #footer a { color: var(--accent-blue); text-decoration: none; transition: color 0.6s ease; }
 
+        /* --- DER BUTTON --- */
         #start-btn {
             position: absolute; z-index: 50;
             background: none; border: none; 
@@ -92,17 +89,30 @@
             cursor: pointer; font-size: 13px; font-weight: 800; 
             letter-spacing: 2.2px; text-transform: uppercase;
             padding: 25px 35px; white-space: nowrap; 
+            outline: none;
+            transition: color 0.1s ease;
         }
+
+        #start-btn.locked { cursor: default; }
 
         #start-btn::before {
             content: ""; position: absolute; top: 22px; left: 30px; right: 30px; bottom: 22px;
             background-color: var(--neon-hover); 
             z-index: -1; border-radius: 1px; display: none;
         }
-        #start-btn:hover { color: #000000 !important; }
-        #start-btn:hover::before { display: block; }
+
+        #start-btn:hover:not(.locked) { color: #000000 !important; }
+        #start-btn:hover:not(.locked)::before { display: block; }
 
         canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
+
+        @media (max-width: 600px) {
+            :root { --logo-size: 24px; }
+            #logo span.last { transform: translate(58px, -0.85em); }
+            #logo { top: 20px; left: 20px; }
+            #theme-toggle { top: 25px; right: 20px; }
+            #footer { bottom: 20px; right: 20px; }
+        }
     </style>
 </head>
 <body data-theme="light">
@@ -115,7 +125,10 @@
     </div>
 
     <div id="theme-toggle"></div>
-    <div id="footer"><a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a></div>
+
+    <div id="footer">
+        <a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a>
+    </div>
     
     <button id="start-btn"><span>UNDER CONSTRUCTION</span></button>
     <canvas id="gameCanvas"></canvas>
@@ -142,36 +155,67 @@
 
         function init() {
             dpr = window.devicePixelRatio || 1;
-            width = window.innerWidth; height = window.innerHeight;
-            canvas.width = width * dpr; canvas.height = height * dpr;
-            canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
             ctx.setTransform(1, 0, 0, 1, 0, 0); 
             ctx.scale(dpr, dpr);
-            bounceX = width / 2; bounceY = height / 2;
+            
+            bounceX = width / 2;
+            bounceY = height / 2;
+
             const angle = Math.random() * Math.PI * 2;
             const speed = Math.sqrt(baseSpeed**2 * 2);
-            speedX = Math.cos(angle) * speed; speedY = Math.sin(angle) * speed;
+            speedX = Math.cos(angle) * speed;
+            speedY = Math.sin(angle) * speed;
         }
 
-        const updateMouse = (e) => {
-            mouseX = (e.clientX || (e.touches && e.touches[0].clientX));
-            mouseY = (e.clientY || (e.touches && e.touches[0].clientY));
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX; mouseY = e.clientY;
             if (lerpX < 0) { lerpX = mouseX; lerpY = mouseY; }
-        };
-        window.addEventListener('mousemove', updateMouse);
-        window.addEventListener('touchstart', updateMouse);
+        });
 
+        // 3-WEGE SCHUBS-MECHANISMUS (33% Wahrscheinlichkeit für Links, Rechts oder 180°)
         startBtn.addEventListener('mousedown', () => {
-            speedX *= 1.6; speedY *= 1.6;
+            if (pushLock) return; 
+
+            const rand = Math.random();
+            const boost = 2.4; // Kraftvoller Stoß
+
+            if (rand < 0.33) {
+                // 90° Links
+                const oldX = speedX;
+                speedX = speedY * boost;
+                speedY = -oldX * boost;
+            } else if (rand < 0.66) {
+                // 90° Rechts
+                const oldX = speedX;
+                speedX = -speedY * boost;
+                speedY = oldX * boost;
+            } else {
+                // 180° Richtungswechsel
+                speedX = -speedX * boost;
+                speedY = -speedY * boost;
+            }
+            
             pushLock = true;
-            setTimeout(() => pushLock = false, 500);
+            startBtn.classList.add('locked');
+
+            setTimeout(() => {
+                pushLock = false;
+                startBtn.classList.remove('locked');
+            }, 600);
         });
 
         startBtn.addEventListener('mouseenter', () => isHovering = true);
         startBtn.addEventListener('mouseleave', () => isHovering = false);
 
         function update() {
-            lerpX += (mouseX - lerpX) * 0.12; // Gleit-Effekt Koordinaten
+            // Koordinaten-Gleiten
+            lerpX += (mouseX - lerpX) * 0.12;
             lerpY += (mouseY - lerpY) * 0.12;
 
             let dx = bounceX - mouseX, dy = bounceY - mouseY;
@@ -189,8 +233,9 @@
             bounceX += speedX; bounceY += speedY;
 
             const btnRect = startBtn.getBoundingClientRect();
+            // Abprallen (Logo-Safezone oben berücksichtigt)
             if (bounceX < btnRect.width/2 + 20 || bounceX > width - btnRect.width/2 - 20) speedX *= -1;
-            if (bounceY < 150 || bounceY > height - btnRect.height/2 - 20) speedY *= -1;
+            if (bounceY < 160 || bounceY > height - btnRect.height/2 - 20) speedY *= -1;
 
             startBtn.style.left = (bounceX - btnRect.width/2) + 'px';
             startBtn.style.top = (bounceY - btnRect.height/2) + 'px';
@@ -198,11 +243,15 @@
 
         function loop() {
             ctx.clearRect(0, 0, width, height);
+            
+            // Scharfe Retina-Koordinaten (Gleit-Effekt)
             ctx.font = "500 11px ui-monospace, SFMono-Regular, Menlo, monospace";
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--info-color');
+            
             if (mouseX > 0 && mouseX < width) {
                 ctx.fillText(`X:${Math.round(mouseX)} Y:${Math.round(mouseY)}`, lerpX + 12, lerpY + 18);
             }
+            
             update();
             requestAnimationFrame(loop);
         }
