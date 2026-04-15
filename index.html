@@ -6,51 +6,49 @@
     <title>Max Gschwendtner</title>
     <style>
         :root {
-            /* Apple Light Mode */
+            /* Hellmodus - Standard */
             --bg-color: #ffffff;
-            --text-primary: #1d1d1f; /* Apple Black */
+            --text-primary: #000000;
             --accent-blue: #0066cc;
-            --info-color: rgba(0,0,0,0.45);
-            --btn-yellow: #FFCC00;
-            --toggle-bg: #1d1d1f; /* Schwarzer Punkt */
+            --info-color: rgba(0,0,0,0.4);
+            --neon-yellow: #EAFF00; /* Apple-typisches Neongelb */
         }
 
         [data-theme='dark'] {
-            /* Apple Dark Mode (OLED) */
+            /* Nachtmodus - Nur Hintergrund & Text-Inversion */
             --bg-color: #000000;
             --text-primary: #ffffff;
             --accent-blue: #2997ff;
-            --info-color: rgba(255,255,255,0.45);
-            --toggle-bg: #ffffff; /* Weißer Punkt */
+            --info-color: rgba(255,255,255,0.4);
         }
 
         body, html { 
             margin: 0; padding: 0; overflow: hidden; 
-            background: var(--bg-color); 
-            /* Apple-Smooth Transition */
-            transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
+            background-color: var(--bg-color); 
+            transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; 
             -webkit-font-smoothing: antialiased;
         }
 
+        /* Dein Name oben links */
         #logo {
             position: fixed; top: 35px; left: 35px; z-index: 100;
             display: flex; flex-direction: column; 
             font-size: 32px; font-weight: 800; line-height: 0.85; 
             letter-spacing: -0.05em; color: var(--text-primary); 
             text-transform: uppercase; pointer-events: auto;
-            transition: color 0.5s ease;
+            transition: color 0.4s ease;
         }
         @media (min-width: 769px) { #logo { flex-direction: row; gap: 10px; } }
 
-        /* Der Theme-Toggle (Punkt oben rechts) */
+        /* Der dünne Ring oben rechts */
         #theme-toggle {
             position: fixed; top: 40px; right: 35px; z-index: 100;
-            width: 14px; height: 14px; 
-            background-color: var(--toggle-bg);
-            border: 1.5px solid var(--toggle-bg);
+            width: 12px; height: 12px; 
+            border: 1px solid var(--text-primary); /* Dünne Kontur wechselt Farbe */
+            background: transparent;
             border-radius: 50%; cursor: pointer; pointer-events: auto; 
-            transition: transform 0.2s ease, background-color 0.5s ease, border-color 0.5s ease;
+            transition: border-color 0.4s ease, transform 0.2s ease;
         }
         #theme-toggle:hover { transform: scale(1.2); }
 
@@ -60,12 +58,14 @@
         }
         #footer a { 
             color: var(--accent-blue); text-decoration: none; 
-            transition: color 0.5s ease; 
+            transition: color 0.4s ease; 
         }
 
+        /* Under Construction Button - Bleibt Neongelb */
         #start-btn {
             position: absolute; z-index: 50;
-            background: none; border: none; color: var(--btn-yellow);
+            background: none; border: none; 
+            color: var(--neon-yellow); 
             cursor: pointer; font-size: 13px; font-weight: 800; 
             letter-spacing: 2px; text-transform: uppercase;
             padding: 25px 35px; white-space: nowrap; 
@@ -73,7 +73,8 @@
 
         #start-btn::before {
             content: ""; position: absolute; top: 22px; left: 30px; right: 30px; bottom: 22px;
-            background: var(--btn-yellow); z-index: -1; border-radius: 2px; display: none;
+            background-color: var(--neon-yellow); 
+            z-index: -1; border-radius: 1px; display: none;
         }
 
         #start-btn:hover { color: #000000 !important; }
@@ -82,10 +83,14 @@
         canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
     </style>
 </head>
-<body data-theme="light"> <div id="logo">
+<body data-theme="light">
+
+    <div id="logo">
         <span>MAX</span><span>GSCHWENDTNER</span>
     </div>
+
     <div id="theme-toggle"></div>
+
     <div id="footer">
         <a href="mailto:mail@maxgschwendtner.com">mail@maxgschwendtner.com</a>
     </div>
@@ -97,8 +102,8 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const startBtn = document.getElementById('start-btn');
-        const logoEl = document.getElementById('logo');
         const themeToggle = document.getElementById('theme-toggle');
+        const logoEl = document.getElementById('logo');
 
         let width, height, dpr;
         const baseSpeed = 1.05; 
@@ -106,10 +111,11 @@
         let mouseX = -1000, mouseY = -1000;
         let isHovering = false, pushLock = false;
 
+        // Logik für den Klick auf den Ring
         themeToggle.addEventListener('click', () => {
-            const currentTheme = document.body.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            document.body.setAttribute('data-theme', newTheme);
+            const current = document.body.getAttribute('data-theme');
+            const target = current === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', target);
         });
 
         function init() {
@@ -119,9 +125,10 @@
             ctx.setTransform(1, 0, 0, 1, 0, 0); 
             ctx.scale(dpr, dpr);
             
-            const logoRect = logoEl.getBoundingClientRect();
-            bounceX = Math.random() * (width - 200) + 100;
-            bounceY = Math.random() * (height - logoRect.bottom - 150) + logoRect.bottom + 100;
+            const lRect = logoEl.getBoundingClientRect();
+            // Startet irgendwo im unteren Bereich
+            bounceX = Math.random() * (width - 250) + 125;
+            bounceY = Math.random() * (height - lRect.bottom - 200) + lRect.bottom + 100;
 
             const angle = Math.random() * Math.PI * 2;
             const speed = Math.sqrt(baseSpeed**2 * 2);
@@ -159,10 +166,11 @@
             bounceX += speedX; bounceY += speedY;
 
             const btnRect = startBtn.getBoundingClientRect();
-            const logoRect = logoEl.getBoundingClientRect();
+            const lRect = logoEl.getBoundingClientRect();
 
+            // Grenzen für den Abprall (Wände und Logo)
             if (bounceX < btnRect.width/2 + 20 || bounceX > width - btnRect.width/2 - 20) speedX *= -1;
-            if (bounceY < logoRect.bottom + btnRect.height/2 + 20 || bounceY > height - btnRect.height/2 - 20) speedY *= -1;
+            if (bounceY < lRect.bottom + btnRect.height/2 + 20 || bounceY > height - btnRect.height/2 - 20) speedY *= -1;
 
             startBtn.style.left = (bounceX - btnRect.width/2) + 'px';
             startBtn.style.top = (bounceY - btnRect.height/2) + 'px';
